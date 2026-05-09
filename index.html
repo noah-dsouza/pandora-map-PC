@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#ddfa00">
-  <title>Pandora Mini-Entrepôts</title>
+  <title>Pandora Mini-Entrepôts — Pointe-Claire</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -35,15 +35,24 @@
       font-size: 13px;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      padding: 12px 16px;
+      padding: 10px 16px;
       position: sticky;
       top: 0;
       z-index: 100;
       box-shadow: 0 4px 20px rgba(0,0,0,0.05);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 48px;
+      gap: 1px;
+    }
+    .topbar-brand { line-height: 1.1; }
+    .topbar-location {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      opacity: 0.65;
     }
     .lang-toggle {
       position: absolute;
@@ -361,8 +370,14 @@
 <body class="lang-fr">
 
   <div class="topbar">
-    <span data-lang="en">Pandora Self-Storage</span>
-    <span data-lang="fr">Pandora Mini-Entrepôts</span>
+    <div class="topbar-brand">
+      <span data-lang="en">Pandora Mini Storage</span>
+      <span data-lang="fr">Pandora Mini-Entrepôts</span>
+    </div>
+    <div class="topbar-location">
+      <span data-lang="en">Pointe-Claire</span>
+      <span data-lang="fr">Pointe-Claire</span>
+    </div>
     <button class="lang-toggle" id="langToggle" type="button" aria-label="Toggle language">
       <span class="lang-opt active" id="langFr">FR</span>
       <span class="lang-opt"        id="langEn">EN</span>
@@ -914,7 +929,6 @@
     const [x, y] = pos;
     const floorLabel = FLOORS[floorId].name[lang];
 
-    // Zone labels in both languages
     let zone;
     if (y < 0.12) {
       zone = { en: 'along the top corridor', fr: 'le long du couloir supérieur' };
@@ -932,10 +946,18 @@
       zone = { en: 'in the central section', fr: 'dans la section centrale' };
     }
 
+    const needsElevator = floorId === '2';
+
     if (lang === 'en') {
-      return `Take the elevator to ${floorLabel}. Follow the highlighted path — unit ${unitId} is ${zone.en}.`;
+      const prefix = needsElevator
+        ? `Take the elevator to ${floorLabel}. `
+        : '';
+      return `${prefix}Follow the highlighted path — unit ${unitId} is ${zone.en}.`;
     } else {
-      return `Prenez l'ascenseur jusqu'à ${floorLabel}. Suivez le chemin indiqué — l'unité ${unitId} se trouve ${zone.fr}.`;
+      const prefix = needsElevator
+        ? `Prenez l'ascenseur jusqu'à l'${floorLabel}. `
+        : '';
+      return `${prefix}Suivez le chemin indiqué — l'unité ${unitId} se trouve ${zone.fr}.`;
     }
   }
 
@@ -1100,8 +1122,8 @@
     $fr.classList.toggle('active', l === 'fr');
     $en.classList.toggle('active', l === 'en');
     document.title = l === 'en'
-      ? 'Pandora Self-Storage — Find my unit'
-      : 'Pandora Mini-Entrepôts — Trouver mon unité';
+      ? 'Pandora Mini Storage — Pointe-Claire'
+      : 'Pandora Mini-Entrepôts — Pointe-Claire';
     $title.textContent = FLOORS[activeFloor].name[l];
     if (activeUnit) showResult(activeUnit, activeFloor);
   }
