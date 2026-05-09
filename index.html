@@ -293,6 +293,11 @@
       -webkit-user-drag: none;
       pointer-events: none;
     }
+    #mapPanLayer {
+      position: relative;
+      width: 100%;
+      line-height: 0;
+    }
     #mapCanvas {
       position: absolute;
       top: 0; left: 0;
@@ -427,8 +432,10 @@
         <div class="floor-switch" id="floorSwitch"></div>
       </div>
       <div class="map-viewport" id="mapViewport">
-        <img id="mapImg" alt="" draggable="false">
-        <canvas id="mapCanvas"></canvas>
+        <div id="mapPanLayer">
+          <img id="mapImg" alt="" draggable="false">
+          <canvas id="mapCanvas"></canvas>
+        </div>
       </div>
       <p class="map-hint">
         <span data-lang="en">Pinch or scroll to zoom · Drag to pan</span>
@@ -440,11 +447,11 @@
     <div class="card help-card">
       <div class="help-label" data-lang="en">Need extra help?</div>
       <div class="help-label" data-lang="fr">Besoin d'aide ?</div>
-      <a href="tel:+14387963900" class="btn-phone">
+      <a href="tel:+14388122800" class="btn-phone">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
         </svg>
-        438-796-3900
+        438-812-2800
       </a>
       <div class="help-hours" data-lang="en">
         Weekdays: 10 AM – 6 PM<br>Weekends: 10 AM – 5 PM
@@ -905,22 +912,51 @@
     const raw = astar(grid, sc, sr, ec, er);
     if (!raw) return [[ex,ey],[ux,uy]];
 
-    // Convert grid indices → image fractions, then keep only turn points
     const frac = raw.map(([c,r])=>[c/GW, r/GH]);
-    frac.push([ux,uy]); // exact unit centre for the pin
-    return collapseRuns(frac);
+    const collapsed = collapseRuns(frac);
+    const straight = straightenPath(grid, collapsed);
+    straight.push([ux,uy]); // exact unit centre for the pin
+    return straight;
   }
 
-  // Keep only points where direction changes (removes thousands of intermediate grid steps)
   function collapseRuns(pts) {
     if (pts.length<=2) return pts;
     const out=[pts[0]];
     for (let i=1;i<pts.length-1;i++) {
       const [ax,ay]=out[out.length-1],[bx,by]=pts[i],[cx,cy]=pts[i+1];
-      const cross=Math.abs((bx-ax)*(cy-ay)-(by-ay)*(cx-ax));
-      if (cross>1e-5) out.push(pts[i]);
+      if (Math.abs((bx-ax)*(cy-ay)-(by-ay)*(cx-ax))>1e-9) out.push(pts[i]);
     }
     out.push(pts[pts.length-1]);
+    return out;
+  }
+
+  // Bresenham line-of-sight check on the walkability grid
+  function lineOfSight(grid, [fx1,fy1], [fx2,fy2]) {
+    let x=Math.round(fx1*GW), y=Math.round(fy1*GH);
+    const x2=Math.round(fx2*GW), y2=Math.round(fy2*GH);
+    const dx=Math.abs(x2-x), dy=Math.abs(y2-y);
+    const sx=x<x2?1:-1, sy=y<y2?1:-1;
+    let err=dx-dy;
+    for (;;) {
+      if (x<0||x>=GW||y<0||y>=GH||!grid[y*GW+x]) return false;
+      if (x===x2&&y===y2) return true;
+      const e2=2*err;
+      if (e2>-dy){err-=dy;x+=sx;}
+      if (e2<dx) {err+=dx;y+=sy;}
+    }
+  }
+
+  // Greedy string-pull: skip intermediate waypoints that have clear line of sight
+  function straightenPath(grid, pts) {
+    if (pts.length<=2) return pts;
+    const out=[pts[0]];
+    let i=0;
+    while (i<pts.length-1) {
+      let j=pts.length-1;
+      while (j>i+1 && !lineOfSight(grid,pts[i],pts[j])) j--;
+      out.push(pts[j]);
+      i=j;
+    }
     return out;
   }
 
@@ -1160,9 +1196,10 @@
   function loadFloorImage(id, cb) {
     const src = FLOORS[id].img;
     if ($img.dataset.loaded === src) { cb && cb(); return; }
+    clearCanvas(); // clear stale path immediately before new image loads
     $img.onload = () => {
       $img.dataset.loaded = src;
-      buildWalkGrid($img, id); // sample pixels → walkability grid
+      buildWalkGrid($img, id);
       cb && cb();
     };
     $img.onerror = () => { $img.dataset.loaded = ''; cb && cb(); };
@@ -1226,14 +1263,17 @@
   $input.addEventListener('keydown', e => { if (e.key === 'Enter') findUnit($input.value); });
   $input.addEventListener('input', () => { if ($input.classList.contains('error')) setFeedback(''); });
 
-  // Resize observer: redraw path when image resizes (e.g. orientation change)
-  new ResizeObserver(() => { if (activeUnit) redrawPath(); }).observe($img);
+  // Resize observer: redraw path when image resizes — only if on the correct floor
+  new ResizeObserver(() => {
+    if (activeUnit && UNIT_FLOOR[activeUnit] === activeFloor) redrawPath();
+  }).observe($img);
 
   // ── PANZOOM ──
   function initPanzoom() {
     if (pz) { pz.destroy(); pz = null; }
     const viewport = document.getElementById('mapViewport');
-    pz = Panzoom($img.parentElement, {
+    const panLayer = document.getElementById('mapPanLayer');
+    pz = Panzoom(panLayer, {
       minScale: 1, maxScale: 5, startScale: 1,
       contain: 'outside', animate: true,
     });
