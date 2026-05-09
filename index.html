@@ -825,18 +825,16 @@
     const grid = new Uint8Array(GW * GH);
     for (let i = 0; i < GW * GH; i++) {
       const r = px[i*4], g = px[i*4+1], b = px[i*4+2];
-      // Cyan/teal unit fill: G and B high, R low → BLOCKED
-      // Everything else (white corridors, orange loading zone, etc.) → WALKABLE
-      grid[i] = (g > 140 && b > 140 && r < 130) ? 0 : 1;
+      // Only bright-white corridor pixels are walkable.
+      // Cyan units, orange loading dock, blue parking, black borders → all blocked.
+      grid[i] = (r > 190 && g > 190 && b > 190) ? 1 : 0;
     }
 
-    // Erode walkable area by 1 cell so the path hugs the corridor centre,
-    // not the unit edge.
+    // Erode walkable area by 1 cell so the path stays centred in corridors.
     const eroded = new Uint8Array(grid);
     for (let r = 0; r < GH; r++) {
       for (let c = 0; c < GW; c++) {
         if (!grid[r*GW+c]) {
-          // mark 4-neighbours as blocked too
           if (r>0)    eroded[(r-1)*GW+c] = 0;
           if (r<GH-1) eroded[(r+1)*GW+c] = 0;
           if (c>0)    eroded[r*GW+c-1]   = 0;
