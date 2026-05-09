@@ -739,104 +739,141 @@
   const UNIT_POS = { ...F1, ...F2 };
 
   // ── FLOOR CONFIG ──
-  // hCorridors: y-fractions of horizontal aisles (white space BETWEEN unit rows)
-  // vSpines:    x-fractions of vertical aisles (white space BETWEEN unit columns)
-  // The router only travels along these axes — no diagonals, no cutting through units.
   const FLOORS = {
     '1': {
       img: 'floor1.png',
       name: { en: 'Floor 1', fr: 'Étage 1' },
-      entrance: [0.371, 0.812],
-      // Main vertical spine x (elevator column — sits in the gap between units)
-      spineX: 0.371,
-      // Horizontal aisle y-values (measured in the white space between rows)
-      hCorridors: [0.065, 0.165, 0.238, 0.272, 0.422, 0.468, 0.518, 0.564, 0.708, 0.772, 0.812],
-      // Additional vertical spines for units far from the main spine
-      // Format: [x, minY, maxY] — the spine only exists between those y-values
-      vSpines: [
-        [0.046, 0.065, 0.812],   // far-left (left of 1106-1116 column)
-        [0.095, 0.065, 0.812],   // between 1106-1116 and 1200s
-        [0.162, 0.065, 0.772],   // left of 1500s/1400s block
-        [0.462, 0.065, 0.812],   // center-right (between left block and 1312-1344 block)
-        [0.654, 0.065, 0.772],   // between 1512-1521 and 1334-1344
-        [0.880, 0.065, 0.772],   // between 1524s/1440s and far-right
-        [0.958, 0.065, 0.812],   // far-right (right of 1153-1166 column)
-      ],
+      // Entrance = left elevator icon at bottom-centre of image
+      entrance: [0.371, 0.808],
     },
     '2': {
       img: 'floor2.png',
       name: { en: 'Floor 2', fr: 'Étage 2' },
-      entrance: [0.382, 0.828],
-      spineX: 0.382,
-      hCorridors: [0.067, 0.158, 0.232, 0.270, 0.298, 0.338, 0.395, 0.435, 0.494, 0.535, 0.585, 0.628, 0.688, 0.728, 0.840],
-      vSpines: [
-        [0.046, 0.067, 0.840],   // far-left
-        [0.098, 0.067, 0.840],   // between 2000s and 2100s columns
-        [0.162, 0.067, 0.840],   // left of 2700-2400 blocks
-        [0.535, 0.067, 0.840],   // between left block and right block
-        [0.758, 0.067, 0.840],   // right-centre
-        [0.958, 0.067, 0.840],   // far-right (right of 2144-2158 column)
-      ],
+      entrance: [0.382, 0.820],
     },
   };
 
-  // ── PATHFINDING — strict corridor routing (no diagonals) ──
-  // Path only moves horizontally along aisles or vertically along spines.
-  // Route: entrance → main spine → nearest H-aisle → nearest V-spine → unit
+  // ── PIXEL-BASED WALKABILITY GRID ──
+  // Sample the floor image onto a small canvas and mark each cell walkable (white
+  // corridor) or blocked (cyan/teal unit).  No manual corridor coordinates needed.
+  const GW = 320, GH = 170;     // grid cols × rows (~same aspect ratio as the PNG)
+  const walkGrids = {};          // { floorId: Uint8Array }
 
+  function buildWalkGrid(imgEl, floorId) {
+    if (walkGrids[floorId]) return;
+    const cv = document.createElement('canvas');
+    cv.width = GW; cv.height = GH;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, GW, GH);
+    let px;
+    try { px = ctx.getImageData(0, 0, GW, GH).data; }
+    catch (_) { return; }  // CORS — needs a real server (python -m http.server)
+
+    const grid = new Uint8Array(GW * GH);
+    for (let i = 0; i < GW * GH; i++) {
+      const r = px[i*4], g = px[i*4+1], b = px[i*4+2];
+      // Cyan/teal unit fill: G and B high, R low → BLOCKED
+      // Everything else (white corridors, orange loading zone, etc.) → WALKABLE
+      grid[i] = (g > 140 && b > 140 && r < 130) ? 0 : 1;
+    }
+
+    // Erode walkable area by 1 cell so the path hugs the corridor centre,
+    // not the unit edge.
+    const eroded = new Uint8Array(grid);
+    for (let r = 0; r < GH; r++) {
+      for (let c = 0; c < GW; c++) {
+        if (!grid[r*GW+c]) {
+          // mark 4-neighbours as blocked too
+          if (r>0)    eroded[(r-1)*GW+c] = 0;
+          if (r<GH-1) eroded[(r+1)*GW+c] = 0;
+          if (c>0)    eroded[r*GW+c-1]   = 0;
+          if (c<GW-1) eroded[r*GW+c+1]   = 0;
+        }
+      }
+    }
+    walkGrids[floorId] = eroded;
+  }
+
+  // ── A* ON WALKABILITY GRID ──
+  class MinHeap {
+    constructor() { this.h = []; }
+    push(v) { this.h.push(v); this._up(this.h.length-1); }
+    pop()   { const t=this.h[0],l=this.h.pop(); if(this.h.length){this.h[0]=l;this._dn(0);} return t; }
+    get size() { return this.h.length; }
+    _up(i) { while(i>0){const p=(i-1)>>1; if(this.h[p][0]<=this.h[i][0])break;[this.h[p],this.h[i]]=[this.h[i],this.h[p]];i=p;} }
+    _dn(i) { const n=this.h.length; for(;;){let m=i,l=2*i+1,r=2*i+2; if(l<n&&this.h[l][0]<this.h[m][0])m=l; if(r<n&&this.h[r][0]<this.h[m][0])m=r; if(m===i)break;[this.h[m],this.h[i]]=[this.h[i],this.h[m]];i=m;} }
+  }
+
+  // Snap a grid cell to the nearest walkable cell (BFS)
+  function snapWalk(grid, c, r) {
+    if (c>=0&&c<GW&&r>=0&&r<GH&&grid[r*GW+c]) return [c,r];
+    const q=[[c,r]], vis=new Set([r*GW+c]);
+    while (q.length) {
+      const [cc,cr]=q.shift();
+      for (const [nc,nr] of [[cc-1,cr],[cc+1,cr],[cc,cr-1],[cc,cr+1]]) {
+        if (nc<0||nc>=GW||nr<0||nr>=GH) continue;
+        const k=nr*GW+nc; if(vis.has(k))continue; vis.add(k);
+        if (grid[k]) return [nc,nr];
+        q.push([nc,nr]);
+      }
+    }
+    return [c,r];
+  }
+
+  function astar(grid, sc, sr, ec, er) {
+    [sc,sr]=snapWalk(grid,sc,sr);
+    [ec,er]=snapWalk(grid,ec,er);
+    const INF=1e9, h=(c,r)=>Math.abs(c-ec)+Math.abs(r-er);
+    const heap=new MinHeap(); heap.push([h(sc,sr),0,sc,sr]);
+    const gs=new Map([[sr*GW+sc,0]]), came=new Map(), closed=new Uint8Array(GW*GH);
+    while (heap.size) {
+      const [,cg,cc,cr]=heap.pop(), ck=cr*GW+cc;
+      if (closed[ck]) continue; closed[ck]=1;
+      if (cc===ec&&cr===er) {
+        const path=[[cc,cr]]; let cur=ck;
+        while (came.has(cur)){ cur=came.get(cur); path.unshift([cur%GW,cur/GW|0]); }
+        return path;
+      }
+      for (const [nc,nr] of [[cc-1,cr],[cc+1,cr],[cc,cr-1],[cc,cr+1]]) {
+        if (nc<0||nc>=GW||nr<0||nr>=GH||!grid[nr*GW+nc]) continue;
+        const nk=nr*GW+nc; if(closed[nk]) continue;
+        const ng=cg+1;
+        if (ng<(gs.get(nk)??INF)){ gs.set(nk,ng); came.set(nk,ck); heap.push([ng+h(nc,nr),ng,nc,nr]); }
+      }
+    }
+    return null;
+  }
+
+  // ── PATH BUILDER ──
   function buildPath(floorId, unitPos) {
-    const floor = FLOORS[floorId];
-    const [ux, uy] = unitPos;
-    const [ex, ey] = floor.entrance;
-    const sx = floor.spineX;
+    const floor  = FLOORS[floorId];
+    const [ux,uy] = unitPos;
+    const [ex,ey] = floor.entrance;
+    const grid   = walkGrids[floorId];
 
-    // 1. Find the horizontal aisle closest to the unit
-    const nearH = floor.hCorridors.reduce((best, y) =>
-      Math.abs(y - uy) < Math.abs(best - uy) ? y : best);
+    if (!grid) return [[ex,ey],[ux,uy]]; // fallback until image loads
 
-    // 2. Find the vertical spine closest to the unit (main or auxiliary)
-    const allSpineXs = [sx, ...floor.vSpines.map(s => s[0])];
-    const nearV = allSpineXs.reduce((best, x) =>
-      Math.abs(x - ux) < Math.abs(best - ux) ? x : best);
+    const sc=Math.round(ex*GW), sr=Math.round(ey*GH);
+    const ec=Math.round(ux*GW), er=Math.round(uy*GH);
+    const raw = astar(grid, sc, sr, ec, er);
+    if (!raw) return [[ex,ey],[ux,uy]];
 
-    // 3. Build an axis-aligned path — only right-angle turns at aisle intersections
-    const pts = [[ex, ey]];
-
-    if (nearV === sx || Math.abs(nearV - sx) < 0.01) {
-      // Unit is reachable directly from main spine:
-      // entrance → (sx, nearH) → (ux, nearH) → unit
-      pts.push([sx, nearH]);
-      pts.push([ux, nearH]);
-    } else {
-      // Unit needs a relay via a side spine:
-      // entrance → (sx, nearH) → (nearV, nearH) → (nearV, uy-approach) → unit
-      pts.push([sx, nearH]);
-      pts.push([nearV, nearH]);
-    }
-    pts.push([ux, uy]);
-
-    return dedupe(pts);
+    // Convert grid indices → image fractions, then keep only turn points
+    const frac = raw.map(([c,r])=>[c/GW, r/GH]);
+    frac.push([ux,uy]); // exact unit centre for the pin
+    return collapseRuns(frac);
   }
 
-  // Remove consecutive duplicate / near-duplicate waypoints
-  function dedupe(pts) {
-    const out = [pts[0]];
-    for (let i = 1; i < pts.length; i++) {
-      const p = pts[i], q = out[out.length - 1];
-      if (Math.abs(p[0] - q[0]) > 0.004 || Math.abs(p[1] - q[1]) > 0.004) out.push(p);
+  // Keep only points where direction changes (removes thousands of intermediate grid steps)
+  function collapseRuns(pts) {
+    if (pts.length<=2) return pts;
+    const out=[pts[0]];
+    for (let i=1;i<pts.length-1;i++) {
+      const [ax,ay]=out[out.length-1],[bx,by]=pts[i],[cx,cy]=pts[i+1];
+      const cross=Math.abs((bx-ax)*(cy-ay)-(by-ay)*(cx-ax));
+      if (cross>1e-5) out.push(pts[i]);
     }
-    return out;
-  }
-
-  function simplifyPath(pts, tol) {
-    if (pts.length <= 2) return pts;
-    const out = [pts[0]];
-    for (let i = 1; i < pts.length - 1; i++) {
-      const prev = out[out.length - 1], curr = pts[i], next = pts[i + 1];
-      const cross = Math.abs((curr[0]-prev[0])*(next[1]-prev[1]) - (curr[1]-prev[1])*(next[0]-prev[0]));
-      if (cross > tol) out.push(curr);
-    }
-    out.push(pts[pts.length - 1]);
+    out.push(pts[pts.length-1]);
     return out;
   }
 
@@ -1069,7 +1106,11 @@
   function loadFloorImage(id, cb) {
     const src = FLOORS[id].img;
     if ($img.dataset.loaded === src) { cb && cb(); return; }
-    $img.onload = () => { $img.dataset.loaded = src; cb && cb(); };
+    $img.onload = () => {
+      $img.dataset.loaded = src;
+      buildWalkGrid($img, id); // sample pixels → walkability grid
+      cb && cb();
+    };
     $img.onerror = () => { $img.dataset.loaded = ''; cb && cb(); };
     $img.src = src;
     $img.alt = FLOORS[id].name[lang];
