@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit Calibration Tool — Pandora</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --lime: #ddfa00;
+      --black: #111;
+      --white: #fff;
+      --surface: #f8f9fa;
+      --border: #e2e8f0;
+      --muted: #6b7280;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Barlow', sans-serif; background: #1a1a2e; color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
+
+    .topbar {
+      background: var(--lime);
+      color: var(--black);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .topbar-title { font-size: 18px; margin-right: auto; }
+
+    .controls {
+      background: #13132a;
+      border-bottom: 1px solid #2a2a4a;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .floor-btns { display: flex; gap: 6px; }
+    .floor-btn {
+      background: #2a2a4a;
+      border: 1px solid #3a3a6a;
+      color: #aaa;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+    }
+    .floor-btn.active { background: var(--lime); color: var(--black); border-color: var(--lime); }
+
+    .unit-input-wrap { display: flex; align-items: center; gap: 8px; }
+    .unit-input-wrap label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #aaa; white-space: nowrap; }
+    #nextUnit {
+      background: #2a2a4a;
+      border: 2px solid #3a3a6a;
+      border-radius: 8px;
+      color: var(--white);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      padding: 6px 14px;
+      width: 110px;
+      outline: none;
+      letter-spacing: 0.05em;
+      transition: border-color 0.15s;
+    }
+    #nextUnit:focus { border-color: var(--lime); }
+
+    .btn {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-lime { background: var(--lime); color: var(--black); }
+    .btn-lime:hover { background: #c8e600; }
+    .btn-red  { background: #ef4444; color: var(--white); }
+    .btn-red:hover { background: #dc2626; }
+    .btn-gray { background: #374151; color: var(--white); }
+    .btn-gray:hover { background: #4b5563; }
+
+    .status-bar {
+      background: #0f0f1e;
+      border-bottom: 1px solid #2a2a4a;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .status-item { color: #aaa; }
+    .status-item span { color: var(--lime); font-weight: 600; }
+    #statusMsg { color: #facc15; font-weight: 600; }
+
+    .main {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      gap: 0;
+    }
+
+    /* Map panel */
+    .map-panel {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: #0a0a18;
+    }
+    .map-wrap {
+      position: relative;
+      display: inline-block;
+      cursor: crosshair;
+    }
+    #mapImg { display: block; max-width: none; }
+    #pinLayer {
+      position: absolute;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      background: #13132a;
+      border-left: 1px solid #2a2a4a;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #2a2a4a;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge {
+      background: var(--lime);
+      color: var(--black);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .unit-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .unit-item {
+      background: #1e1e3a;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      gap: 8px;
+    }
+    .unit-item .uid {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      color: var(--white);
+      min-width: 48px;
+    }
+    .unit-item .coords { color: #aaa; font-size: 12px; flex: 1; }
+    .unit-item .del-btn {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+      line-height: 1;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+    .unit-item .del-btn:hover { opacity: 1; }
+
+    .output-panel {
+      border-top: 1px solid #2a2a4a;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .output-panel label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6b7280;
+    }
+    #outputBox {
+      background: #0a0a18;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      color: #86efac;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 11px;
+      padding: 10px;
+      height: 140px;
+      overflow-y: auto;
+      resize: none;
+      width: 100%;
+    }
+    .output-actions { display: flex; gap: 8px; }
+
+    /* Zoom controls */
+    .zoom-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+    }
+    .zoom-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(20,20,40,0.9);
+      border: 1px solid #3a3a6a;
+      color: var(--white);
+      font-size: 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      backdrop-filter: blur(6px);
+    }
+    .zoom-btn:hover { background: #2a2a4a; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">Unit Calibration Tool</div>
+  <div style="font-size:12px;opacity:0.6;font-weight:600">Click on a unit to set its coordinates</div>
+</div>
+
+<div class="controls">
+  <div class="floor-btns">
+    <button class="floor-btn active" data-floor="1">Floor 1</button>
+    <button class="floor-btn" data-floor="2">Floor 2</button>
+  </div>
+
+  <div class="unit-input-wrap">
+    <label>Next unit:</label>
+    <input id="nextUnit" type="text" placeholder="1101" autocomplete="off">
+  </div>
+
+  <button class="btn btn-lime" id="skipBtn">Skip →</button>
+  <button class="btn btn-red"  id="undoBtn">↩ Undo</button>
+  <button class="btn btn-gray" id="clearFloorBtn">Clear Floor</button>
+
+  <div style="margin-left:auto;font-size:12px;color:#aaa;">
+    Use <kbd style="background:#2a2a4a;padding:2px 6px;border-radius:4px;font-size:11px">scroll</kbd> to zoom map
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-item">Floor: <span id="sFloor">1</span></div>
+  <div class="status-item">Mapped: <span id="sMapped">0</span></div>
+  <div class="status-item">Last click: <span id="sCoords">—</span></div>
+  <div id="statusMsg"></div>
+</div>
+
+<div class="main">
+  <div class="map-panel" id="mapPanel">
+    <div class="map-wrap" id="mapWrap">
+      <img id="mapImg" draggable="false">
+      <canvas id="pinLayer"></canvas>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      Mapped Units
+      <span class="badge" id="countBadge">0</span>
+    </div>
+    <div class="unit-list" id="unitList"></div>
+    <div class="output-panel">
+      <label>Output — paste into index.html</label>
+      <textarea id="outputBox" readonly></textarea>
+      <div class="output-actions">
+        <button class="btn btn-lime" id="copyBtn" style="flex:1">Copy Code</button>
+        <button class="btn btn-gray" id="exportBtn">Export JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="zoom-controls">
+  <button class="zoom-btn" id="zIn">+</button>
+  <button class="zoom-btn" id="zOut">−</button>
+  <button class="zoom-btn" id="zFit" title="Fit to window" style="font-size:14px">⊡</button>
+</div>
+
+<script>
+  const FLOOR_IMGS = { '1': 'floor1.png', '2': 'floor2.png' };
+  let activeFloor = '1';
+  let scale = 1;
+  let mapped = {}; // { floorId: { unitId: [x,y] } }
+  let nextUnit = '';
+
+  // ── DOM ──
+  const $img      = document.getElementById('mapImg');
+  const $pins     = document.getElementById('pinLayer');
+  const $mapWrap  = document.getElementById('mapWrap');
+  const $mapPanel = document.getElementById('mapPanel');
+  const $next     = document.getElementById('nextUnit');
+  const $out      = document.getElementById('outputBox');
+  const $list     = document.getElementById('unitList');
+  const $count    = document.getElementById('countBadge');
+  const $sMapped  = document.getElementById('sMapped');
+  const $sCoords  = document.getElementById('sCoords');
+  const $sFloor   = document.getElementById('sFloor');
+  const $status   = document.getElementById('statusMsg');
+
+  // ── INIT ──
+  Object.keys(FLOOR_IMGS).forEach(id => { mapped[id] = {}; });
+  loadFloor('1');
+  $next.focus();
+
+  // ── FLOOR SWITCH ──
+  document.querySelectorAll('.floor-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.floor-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadFloor(btn.dataset.floor);
+    });
+  });
+
+  function loadFloor(id) {
+    activeFloor = id;
+    $sFloor.textContent = id;
+    $img.onload = () => {
+      fitToWindow();
+      redrawPins();
+      renderList();
+    };
+    $img.src = FLOOR_IMGS[id];
+  }
+
+  // ── ZOOM ──
+  function applyScale(s, cx, cy) {
+    const panel = $mapPanel;
+    const prevScale = scale;
+    scale = Math.max(0.2, Math.min(4, s));
+
+    const W = $img.naturalWidth  * scale;
+    const H = $img.naturalHeight * scale;
+    $img.style.width  = W + 'px';
+    $img.style.height = H + 'px';
+    $pins.width  = W;
+    $pins.height = H;
+    $pins.style.width  = W + 'px';
+    $pins.style.height = H + 'px';
+    redrawPins();
+
+    // Keep zoom centred on cx,cy (panel-relative)
+    if (cx !== undefined) {
+      const ratio = scale / prevScale;
+      panel.scrollLeft = (panel.scrollLeft + cx) * ratio - cx;
+      panel.scrollTop  = (panel.scrollTop  + cy) * ratio - cy;
+    }
+  }
+
+  function fitToWindow() {
+    const pw = $mapPanel.clientWidth, ph = $mapPanel.clientHeight;
+    const iw = $img.naturalWidth,    ih = $img.naturalHeight;
+    applyScale(Math.min(pw / iw, ph / ih) * 0.97);
+    $mapPanel.scrollLeft = 0;
+    $mapPanel.scrollTop  = 0;
+  }
+
+  $mapPanel.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = $mapPanel.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    applyScale(scale * (e.deltaY < 0 ? 1.12 : 0.89), cx, cy);
+  }, { passive: false });
+
+  document.getElementById('zIn').addEventListener('click',  () => applyScale(scale * 1.3));
+  document.getElementById('zOut').addEventListener('click', () => applyScale(scale * 0.77));
+  document.getElementById('zFit').addEventListener('click', fitToWindow);
+
+  // ── CLICK TO MAP ──
+  $mapWrap.addEventListener('click', e => {
+    const rect = $img.getBoundingClientRect();
+    const fx = (e.clientX - rect.left) / rect.width;
+    const fy = (e.clientY - rect.top)  / rect.height;
+    const uid = $next.value.trim();
+    if (!uid) { flash('⚠ Enter a unit number first'); return; }
+
+    mapped[activeFloor][uid] = [+fx.toFixed(4), +fy.toFixed(4)];
+    $sCoords.textContent = `[${fx.toFixed(3)}, ${fy.toFixed(3)}]`;
+    flash(`✓ Unit ${uid} → [${fx.toFixed(3)}, ${fy.toFixed(3)}]`);
+
+    redrawPins();
+    renderList();
+    generateOutput();
+
+    // Auto-advance to next logical unit
+    autoAdvance(uid);
+    $next.focus();
+  });
+
+  function autoAdvance(uid) {
+    const n = parseInt(uid, 10);
+    if (!isNaN(n)) {
+      $next.value = String(n + 1);
+    }
+  }
+
+  document.getElementById('skipBtn').addEventListener('click', () => {
+    const uid = $next.value.trim();
+    if (!uid) return;
+    autoAdvance(uid);
+    flash(`→ Skipped ${uid}`);
+    $next.focus();
+  });
+
+  document.getElementById('undoBtn').addEventListener('click', () => {
+    const keys = Object.keys(mapped[activeFloor]);
+    if (!keys.length) return;
+    const last = keys[keys.length - 1];
+    delete mapped[activeFloor][last];
+    $next.value = last;
+    redrawPins();
+    renderList();
+    generateOutput();
+    flash(`↩ Removed ${last}`);
+  });
+
+  document.getElementById('clearFloorBtn').addEventListener('click', () => {
+    if (!confirm(`Clear all units for Floor ${activeFloor}?`)) return;
+    mapped[activeFloor] = {};
+    redrawPins();
+    renderList();
+    generateOutput();
+    flash(`Cleared Floor ${activeFloor}`);
+  });
+
+  // ── PIN DRAWING ──
+  function redrawPins() {
+    const ctx = $pins.getContext('2d');
+    ctx.clearRect(0, 0, $pins.width, $pins.height);
+    const W = $img.naturalWidth * scale;
+    const H = $img.naturalHeight * scale;
+    const units = mapped[activeFloor];
+
+    Object.entries(units).forEach(([uid, [fx, fy]]) => {
+      const px = fx * W, py = fy * H;
+      // Circle
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fillStyle   = '#ddfa00';
+      ctx.fill();
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+      // Label
+      ctx.font      = `bold ${Math.max(9, 11 * scale)}px "Barlow Condensed", sans-serif`;
+      ctx.fillStyle = '#111';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(uid, px, py);
+    });
+  }
+
+  // ── UNIT LIST SIDEBAR ──
+  function renderList() {
+    const units  = mapped[activeFloor];
+    const count  = Object.keys(units).length;
+    $count.textContent  = count;
+    $sMapped.textContent = count;
+    $list.innerHTML = '';
+
+    // Show newest first
+    Object.entries(units).reverse().forEach(([uid, [fx, fy]]) => {
+      const div = document.createElement('div');
+      div.className = 'unit-item';
+      div.innerHTML = `
+        <span class="uid">${uid}</span>
+        <span class="coords">[${fx.toFixed(3)}, ${fy.toFixed(3)}]</span>
+        <button class="del-btn" data-uid="${uid}" title="Remove">✕</button>`;
+      $list.appendChild(div);
+    });
+
+    $list.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        delete mapped[activeFloor][btn.dataset.uid];
+        renderList();
+        redrawPins();
+        generateOutput();
+      });
+    });
+  }
+
+  // ── CODE OUTPUT ──
+  function generateOutput() {
+    const all = {};
+    Object.entries(mapped).forEach(([fid, units]) => {
+      Object.entries(units).forEach(([uid, pos]) => {
+        all[`${fid}:${uid}`] = pos;
+      });
+    });
+
+    // Group by floor for readability
+    const f1 = Object.entries(mapped['1']);
+    const f2 = Object.entries(mapped['2']);
+
+    let code = '// ── Floor 1 ──\n';
+    f1.forEach(([uid,[x,y]]) => { code += `  '${uid}': [${x}, ${y}],\n`; });
+    code += '\n// ── Floor 2 ──\n';
+    f2.forEach(([uid,[x,y]]) => { code += `  '${uid}': [${x}, ${y}],\n`; });
+
+    $out.value = code;
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText($out.value).then(() => flash('✓ Copied to clipboard!'));
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const data = JSON.stringify(mapped, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: 'unit-coords.json',
+    });
+    a.click();
+  });
+
+  // ── KEYBOARD SHORTCUTS ──
+  document.addEventListener('keydown', e => {
+    if (e.target === $next) return; // don't interfere with typing
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+      document.getElementById('undoBtn').click();
+    }
+  });
+
+  // ── HELPERS ──
+  let flashTimer;
+  function flash(msg) {
+    $status.textContent = msg;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { $status.textContent = ''; }, 3000);
+  }
+</script>
+</body>
+</html>
