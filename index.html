@@ -920,9 +920,8 @@
     }
 
     const collapsed = collapseRuns(fullPath);
-    const straight = straightenPath(grid, collapsed);
-    if (straight.length > 0) straight[straight.length - 1] = [ux, uy];
-    return straight;
+    if (collapsed.length > 0) collapsed[collapsed.length - 1] = [ux, uy];
+    return collapsed;
   }
 
   function collapseRuns(pts) {
