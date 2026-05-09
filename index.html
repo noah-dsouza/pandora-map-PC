@@ -797,13 +797,12 @@
     '1': {
       img: 'floor1.png',
       name: { en: 'Floor 1', fr: 'Étage 1' },
-      // Entrance = left elevator icon at bottom-centre of image
-      entrance: [0.371, 0.808],
+      waypoints: [[0.4087, 0.8936], [0.4086, 0.7809], [0.4235, 0.6994]],
     },
     '2': {
       img: 'floor2.png',
       name: { en: 'Floor 2', fr: 'Étage 2' },
-      entrance: [0.382, 0.820],
+      waypoints: [[0.4276, 0.942], [0.4249, 0.8124]],
     },
   };
 
@@ -900,22 +899,31 @@
 
   // ── PATH BUILDER ──
   function buildPath(floorId, unitPos) {
-    const floor  = FLOORS[floorId];
-    const [ux,uy] = unitPos;
-    const [ex,ey] = floor.entrance;
-    const grid   = walkGrids[floorId];
+    const floor = FLOORS[floorId];
+    const [ux, uy] = unitPos;
+    const grid = walkGrids[floorId];
+    const wps = floor.waypoints;
 
-    if (!grid) return [[ex,ey],[ux,uy]]; // fallback until image loads
+    if (!grid) return [...wps, [ux, uy]];
 
-    const sc=Math.round(ex*GW), sr=Math.round(ey*GH);
-    const ec=Math.round(ux*GW), er=Math.round(uy*GH);
-    const raw = astar(grid, sc, sr, ec, er);
-    if (!raw) return [[ex,ey],[ux,uy]];
+    // Chain A* through each waypoint, then to the unit
+    const stops = [...wps, [ux, uy]];
+    let fullPath = [];
 
-    const frac = raw.map(([c,r])=>[c/GW, r/GH]);
-    const collapsed = collapseRuns(frac);
+    for (let i = 0; i < stops.length - 1; i++) {
+      const [ex, ey] = stops[i];
+      const [nx, ny] = stops[i + 1];
+      const sc = Math.round(ex * GW), sr = Math.round(ey * GH);
+      const ec = Math.round(nx * GW), er = Math.round(ny * GH);
+      const raw = astar(grid, sc, sr, ec, er);
+      const seg = raw ? raw.map(([c, r]) => [c / GW, r / GH]) : [[ex, ey], [nx, ny]];
+      if (i === 0) { fullPath = seg; }
+      else { fullPath.push(...seg.slice(1)); }
+    }
+
+    const collapsed = collapseRuns(fullPath);
     const straight = straightenPath(grid, collapsed);
-    straight.push([ux,uy]); // exact unit centre for the pin
+    if (straight.length > 0) straight[straight.length - 1] = [ux, uy];
     return straight;
   }
 
