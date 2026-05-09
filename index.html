@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ddfa00">
+  <title>Pandora Mini-Entrepôts</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #111111;
+      --white: #ffffff;
+      --lime: #ddfa00;
+      --lime-dark: #9aba00;
+      --surface: #f8f9fa;
+      --border: #eaedf0;
+      --muted: #6b7280;
+      --ink: #111827;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--white);
+      color: var(--ink);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+    }
+    body.lang-fr [data-lang="en"] { display: none !important; }
+    body.lang-en [data-lang="fr"] { display: none !important; }
+
+    /* ── Topbar ── */
+    .topbar {
+      background: var(--lime);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+    }
+    .lang-toggle {
+      position: absolute;
+      right: 16px;
+      background: rgba(0,0,0,0.08);
+      border: none;
+      border-radius: 100px;
+      padding: 3px;
+      cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      display: flex;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .lang-toggle:hover { background: rgba(0,0,0,0.14); }
+    .lang-opt {
+      font-weight: 800;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      color: var(--black);
+      opacity: 0.5;
+      letter-spacing: 0.05em;
+      user-select: none;
+      pointer-events: none;
+      transition: all 0.2s;
+    }
+    .lang-opt.active { background: var(--white); opacity: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+    /* ── Layout ── */
+    .page-wrapper {
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 16px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card {
+      background: var(--white);
+      border-radius: 28px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.02);
+      animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .card:nth-child(1) { animation-delay: 0s; }
+    .card:nth-child(2) { animation-delay: 0.07s; }
+    .card:nth-child(3) { animation-delay: 0.14s; }
+    .card:nth-child(4) { animation-delay: 0.21s; }
+    .card:nth-child(5) { animation-delay: 0.28s; }
+
+    /* ── Hero/Input Card ── */
+    .hero-card {
+      padding: 36px 32px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .hero-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--surface);
+      padding: 7px 16px;
+      border-radius: 100px;
+    }
+    h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: clamp(38px, 11vw, 64px);
+      line-height: 0.95;
+      text-transform: uppercase;
+      color: var(--black);
+    }
+    .lime-word { position: relative; display: inline-block; }
+    .lime-word::after {
+      content: '';
+      position: absolute;
+      left: -4px; right: -4px; bottom: 5px;
+      height: 10px;
+      background: var(--lime);
+      z-index: -1;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .input-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .input-row { display: flex; width: 100%; gap: 8px; }
+    #unitInput {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 26px;
+      color: var(--black);
+      outline: none;
+      text-align: center;
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s, background 0.2s;
+      -moz-appearance: textfield;
+    }
+    #unitInput::-webkit-inner-spin-button,
+    #unitInput::-webkit-outer-spin-button { -webkit-appearance: none; }
+    #unitInput::placeholder { color: #cbd5e1; font-weight: 700; }
+    #unitInput:focus { border-color: var(--lime); background: var(--white); }
+    #unitInput.error { border-color: #fca5a5; background: #fff5f5; animation: shake 0.35s ease; }
+    #findBtn {
+      background: var(--black);
+      color: var(--lime);
+      border: none;
+      border-radius: 14px;
+      padding: 0 22px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      height: 56px;
+      flex-shrink: 0;
+    }
+    #findBtn:hover { background: var(--lime); color: var(--black); }
+    #findBtn:active { transform: scale(0.96); }
+    .input-feedback { font-size: 13px; color: #ef4444; font-weight: 500; min-height: 18px; }
+
+    /* ── Result Card ── */
+    .result-card {
+      display: none;
+      background: var(--lime);
+      border-radius: 28px;
+      padding: 22px 28px;
+      flex-direction: column;
+      gap: 3px;
+      animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .result-card.show { display: flex; }
+    .result-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.4);
+    }
+    .result-main {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 30px;
+      text-transform: uppercase;
+      color: var(--black);
+      line-height: 1.05;
+    }
+    .result-dir {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(0,0,0,0.62);
+      margin-top: 6px;
+      line-height: 1.55;
+    }
+
+    /* ── Map Card ── */
+    .map-card { padding: 24px 20px 16px; }
+    .map-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .map-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 26px;
+      text-transform: uppercase;
+      color: var(--black);
+    }
+    .floor-switch {
+      background: rgba(0,0,0,0.06);
+      border-radius: 100px;
+      display: flex;
+      padding: 3px;
+      gap: 2px;
+    }
+    .floor-btn {
+      background: transparent;
+      border: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      cursor: pointer;
+      color: var(--black);
+      opacity: 0.5;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .floor-btn.active { background: var(--white); opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+    /* ── Map Viewport ── */
+    .map-viewport {
+      position: relative;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      touch-action: none;
+      cursor: grab;
+      background: var(--surface);
+    }
+    .map-viewport:active { cursor: grabbing; }
+    #mapImg {
+      display: block;
+      width: 100%;
+      height: auto;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+    #mapCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .map-hint {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Help Card ── */
+    .help-card {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 14px;
+    }
+    .help-label { font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+    .btn-phone {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--black);
+      color: var(--lime);
+      text-decoration: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: clamp(20px, 6vw, 30px);
+      padding: 14px 32px;
+      border-radius: 100px;
+      transition: all 0.25s;
+      box-shadow: 0 10px 28px rgba(17,17,17,0.18);
+    }
+    .btn-phone:hover { background: var(--lime); color: var(--black); transform: translateY(-3px); }
+    .btn-phone svg { width: 22px; height: 22px; fill: currentColor; flex-shrink: 0; }
+    .help-hours { font-size: 14px; color: var(--muted); font-weight: 500; line-height: 1.6; }
+
+    footer {
+      padding: 8px 0 40px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    footer a { color: inherit; text-decoration: none; }
+    footer a:hover { color: var(--black); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%,60% { transform: translateX(-5px); }
+      40%,80% { transform: translateX(5px); }
+    }
+    @media (max-width: 400px) {
+      .hero-card { padding: 28px 18px; }
+      .map-card  { padding: 18px 12px 12px; }
+      .help-card { padding: 24px 18px; }
+    }
+  </style>
+</head>
+<body class="lang-fr">
+
+  <div class="topbar">
+    <span data-lang="en">Pandora Self-Storage</span>
+    <span data-lang="fr">Pandora Mini-Entrepôts</span>
+    <button class="lang-toggle" id="langToggle" type="button" aria-label="Toggle language">
+      <span class="lang-opt active" id="langFr">FR</span>
+      <span class="lang-opt"        id="langEn">EN</span>
+    </button>
+  </div>
+
+  <div class="page-wrapper">
+
+    <!-- Hero / Input -->
+    <div class="card hero-card">
+      <div class="hero-eyebrow">
+        <span data-lang="en">Wayfinding</span>
+        <span data-lang="fr">Orientation</span>
+      </div>
+      <h1>
+        <span data-lang="en">Find your<br><span class="lime-word">unit</span></span>
+        <span data-lang="fr">Trouver votre<br><span class="lime-word">unité</span></span>
+      </h1>
+      <div class="input-group">
+        <div class="input-label">
+          <span data-lang="en">Enter your unit number</span>
+          <span data-lang="fr">Entrez votre numéro d'unité</span>
+        </div>
+        <div class="input-row">
+          <input id="unitInput" type="text" inputmode="numeric" maxlength="6"
+                 placeholder="1101" autocomplete="off" spellcheck="false">
+          <button id="findBtn" type="button">
+            <span data-lang="en">GO</span>
+            <span data-lang="fr">OK</span>
+          </button>
+        </div>
+        <div class="input-feedback" id="inputFeedback" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card" id="resultCard" role="status" aria-live="polite">
+      <div class="result-label" id="resultLabel"></div>
+      <div class="result-main"  id="resultMain"></div>
+      <div class="result-dir"   id="resultDir"></div>
+    </div>
+
+    <!-- Map -->
+    <div class="card map-card">
+      <div class="map-header">
+        <div class="map-title" id="mapTitle">Étage 1</div>
+        <div class="floor-switch" id="floorSwitch"></div>
+      </div>
+      <div class="map-viewport" id="mapViewport">
+        <img id="mapImg" alt="" draggable="false">
+        <canvas id="mapCanvas"></canvas>
+      </div>
+      <p class="map-hint">
+        <span data-lang="en">Pinch or scroll to zoom · Drag to pan</span>
+        <span data-lang="fr">Pincez pour zoomer · Glissez pour déplacer</span>
+      </p>
+    </div>
+
+    <!-- Help -->
+    <div class="card help-card">
+      <div class="help-label" data-lang="en">Need extra help?</div>
+      <div class="help-label" data-lang="fr">Besoin d'aide ?</div>
+      <a href="tel:+14387963900" class="btn-phone">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+        </svg>
+        438-796-3900
+      </a>
+      <div class="help-hours" data-lang="en">
+        Weekdays: 10 AM – 6 PM<br>Weekends: 10 AM – 5 PM
+      </div>
+      <div class="help-hours" data-lang="fr">
+        En semaine : 10h – 18h<br>Week-end : 10h – 17h
+      </div>
+    </div>
+
+    <footer>
+      <a href="https://pandoramini.com" target="_blank" rel="noopener">pandoramini.com</a>
+    </footer>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+  <script>
+  // ─────────────────────────────────────────────────────────────────────────
+  // UNIT COORDINATE DATABASE
+  // All positions are [x, y] as fractions (0–1) of each floor image dimensions.
+  // Floor 1 image: floor1.png   (~1510 × 800 px)
+  // Floor 2 image: floor2.png   (~1510 × 820 px)
+  //
+  // To add or correct a unit: find its visual centre on the PNG and divide by
+  // image width/height. E.g. pixel (755, 400) in a 1510×800 image → [0.50, 0.50]
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Helper: generate a range of units spread evenly across a box
+  // units: array of ids (in visual order), box: {x1,y1,x2,y2}, dir:'h'|'v'
+  function spreadUnits(units, box, dir) {
+    const out = {};
+    const n = units.length;
+    units.forEach((id, i) => {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      if (dir === 'h') {
+        out[id] = [box.x1 + t * (box.x2 - box.x1), (box.y1 + box.y2) / 2];
+      } else {
+        out[id] = [(box.x1 + box.x2) / 2, box.y1 + t * (box.y2 - box.y1)];
+      }
+    });
+    return out;
+  }
+
+  // ── FLOOR 1 UNITS ──
+  const F1 = {
+    ...spreadUnits(['1701','1702','1703','1704','1705','1706','1707','1708','1709','1710','1711','1712','1713'],
+                   {x1:0.178,y1:0.038,x2:0.455,y2:0.060}, 'h'),
+    ...spreadUnits(['1715','1716','1717','1718','1719','1720','1721','1722','1723','1724','1725','1726','1727',
+                    '1728','1729','1730','1731','1732','1733','1734','1735','1736','1737','1738','1739','1740',
+                    '1741','1742','1743','1744','1745','1746'],
+                   {x1:0.460,y1:0.038,x2:0.995,y2:0.060}, 'h'),
+    '1714': [0.381, 0.045],
+
+    // Second row (1600s)
+    ...spreadUnits(['1603','1604','1605','1606','1607'],
+                   {x1:0.182,y1:0.110,x2:0.286,y2:0.125}, 'h'),
+    ...spreadUnits(['1608','1609','1610','1611','1612','1613','1614'],
+                   {x1:0.292,y1:0.095,x2:0.455,y2:0.145}, 'h'),
+    ...spreadUnits(['1617','1618','1619','1620','1621','1622','1623','1624','1625','1626','1627','1628','1629','1630','1631'],
+                   {x1:0.472,y1:0.100,x2:0.876,y2:0.120}, 'h'),
+    '1801': [0.178, 0.090], '1802': [0.178, 0.130],
+    // Small top-right units
+    ...spreadUnits(['1259','1258','1257','1256','1255','1254'],
+                   {x1:0.878,y1:0.100,x2:0.960,y2:0.120}, 'h'),
+
+    // 1101/1102 — left of center top
+    '1101': [0.152, 0.068], '1102': [0.152, 0.150],
+    '1103': [0.105, 0.140], '1104': [0.118, 0.140], '1105': [0.130, 0.140],
+
+    // Left wall column  1106-1116
+    ...spreadUnits(['1106','1107','1108','1109','1110','1111','1112','1113','1114','1116','1115'],
+                   {x1:0.040,y1:0.218,x2:0.055,y2:0.685}, 'v'),
+    'P1005': [0.030, 0.410], 'P1006': [0.030, 0.500],
+
+    // Bottom-far-left
+    'P1007': [0.025, 0.758], 'P1008': [0.062, 0.884], 'P1009': [0.162, 0.884],
+    ...spreadUnits(['1117','1118','1119','1120'],
+                   {x1:0.060,y1:0.798,x2:0.148,y2:0.812}, 'h'),
+    ...spreadUnits(['1121','1122','1123'],
+                   {x1:0.128,y1:0.728,x2:0.155,y2:0.800}, 'v'),
+
+    // 1200s column
+    ...spreadUnits(['1201','1202','1203','1204','1205'],
+                   {x1:0.098,y1:0.195,x2:0.112,y2:0.370}, 'v'),
+    ...spreadUnits(['1206','1207','1208','1209','1210','1211'],
+                   {x1:0.098,y1:0.420,x2:0.112,y2:0.680}, 'v'),
+
+    // 1300s row
+    '1301': [0.098, 0.540], '1212': [0.148, 0.540], '1213': [0.188, 0.540],
+    ...spreadUnits(['1302','1303','1304'],
+                   {x1:0.130,y1:0.540,x2:0.188,y2:0.555}, 'h'),
+    ...spreadUnits(['1215','1216','1217','1218','1219','1220','1221'],
+                   {x1:0.210,y1:0.660,x2:0.500,y2:0.675}, 'h'),
+    '1222': [0.508, 0.600], '1223': [0.508, 0.558], '1224': [0.508, 0.520],
+    ...spreadUnits(['1225','1226','1227','1228','1229'],
+                   {x1:0.455,y1:0.540,x2:0.455,y2:0.700}, 'v'),
+    ...spreadUnits(['1230','1231','1232','1233','1234'],
+                   {x1:0.505,y1:0.600,x2:0.690,y2:0.620}, 'h'),
+    '1214': [0.210, 0.570],
+
+    // 1500s row (upper middle)
+    ...spreadUnits(['1501','1502','1503','1504','1505','1506','1507','1508','1509','1510','1511'],
+                   {x1:0.165,y1:0.245,x2:0.455,y2:0.262}, 'h'),
+
+    // 1400s row (middle)
+    ...spreadUnits(['1401','1402','1403','1404','1405','1406','1407','1408','1409','1410','1411','1412','1413'],
+                   {x1:0.098,y1:0.438,x2:0.455,y2:0.455}, 'h'),
+    ...spreadUnits(['1414','1415','1416','1417','1418','1419'],
+                   {x1:0.508,y1:0.330,x2:0.520,y2:0.533}, 'v'),
+    ...spreadUnits(['1420','1421','1422','1423','1424','1425'],
+                   {x1:0.440,y1:0.208,x2:0.455,y2:0.440}, 'v'),
+
+    // 1300s (centre block)
+    ...spreadUnits(['1305','1306','1307','1308','1309','1310','1311'],
+                   {x1:0.210,y1:0.535,x2:0.505,y2:0.550}, 'h'),
+
+    // 1512-1521
+    ...spreadUnits(['1512','1513','1514','1515','1516','1517'],
+                   {x1:0.455,y1:0.218,x2:0.645,y2:0.235}, 'h'),
+    ...spreadUnits(['1518','1519','1520','1521'],
+                   {x1:0.635,y1:0.200,x2:0.645,y2:0.330}, 'v'),
+    '1522': [0.635, 0.360], '1523': [0.635, 0.395],
+
+    // 1313-1323 (right-of-center)
+    ...spreadUnits(['1313','1314','1315','1316','1317','1318'],
+                   {x1:0.470,y1:0.438,x2:0.670,y2:0.452}, 'h'),
+    '1312': [0.455, 0.438],
+    ...spreadUnits(['1319','1320','1321','1322','1323'],
+                   {x1:0.628,y1:0.380,x2:0.645,y2:0.670}, 'v'),
+    '1324': [0.626, 0.680], '1325': [0.636, 0.680],
+
+    // 1524-1535 (right of 1512 block)
+    ...spreadUnits(['1524','1525','1526','1527','1528','1529','1530','1531','1532'],
+                   {x1:0.682,y1:0.218,x2:0.878,y2:0.235}, 'h'),
+
+    // 1440-1452 (small units right section)
+    ...spreadUnits(['1440','1441','1442','1443','1444','1445','1446','1447','1448','1449','1450','1451','1452'],
+                   {x1:0.682,y1:0.295,x2:0.840,y2:0.310}, 'h'),
+
+    // 1430-1439 (right centre block)
+    '1430': [0.685, 0.390],
+    ...spreadUnits(['1431','1432','1433','1434','1435','1436','1437'],
+                   {x1:0.690,y1:0.430,x2:0.850,y2:0.445}, 'h'),
+    '1438': [0.830, 0.366], '1439': [0.860, 0.366],
+
+    // 1334-1344
+    ...spreadUnits(['1344','1343','1342','1341','1340','1339','1338','1337','1336','1335','1334','1333'],
+                   {x1:0.690,y1:0.535,x2:0.840,y2:0.550}, 'h'),
+
+    // 1248-1259 (right side middle)
+    ...spreadUnits(['1248','1249','1250','1251','1252'],
+                   {x1:0.840,y1:0.430,x2:0.876,y2:0.500}, 'v'),
+
+    // Far-right column 1153-1166
+    ...spreadUnits(['1153','1154','1155','1156','1157','1158','1159','1160','1161','1162','1163','1164','1165','1166'],
+                   {x1:0.958,y1:0.355,x2:0.972,y2:0.875}, 'v'),
+    'P1028': [0.945, 0.680], 'P1029': [0.945, 0.640], 'P1030': [0.945, 0.530],
+    'P1031': [0.945, 0.440], 'P1032': [0.945, 0.370],
+    'P1027': [0.875, 0.720],
+
+    // Bottom row 1001, 1124-1152
+    '1001': [0.315, 0.905],
+    ...spreadUnits(['1124','1125','1126'],
+                   {x1:0.210,y1:0.740,x2:0.265,y2:0.758}, 'h'),
+    ...spreadUnits(['1127','1128','1129','1130','1131'],
+                   {x1:0.280,y1:0.798,x2:0.455,y2:0.812}, 'h'),
+    ...spreadUnits(['1132','1133','1134'],
+                   {x1:0.455,y1:0.774,x2:0.500,y2:0.822}, 'h'),
+    ...spreadUnits(['1135','1136','1137','1138','1139'],
+                   {x1:0.512,y1:0.798,x2:0.628,y2:0.812}, 'h'),
+    ...spreadUnits(['1140','1141','1142','1143','1144','1145'],
+                   {x1:0.628,y1:0.740,x2:0.700,y2:0.840}, 'v'),
+    ...spreadUnits(['1146','1147','1148','1149','1150','1151','1152'],
+                   {x1:0.730,y1:0.824,x2:0.965,y2:0.840}, 'h'),
+  };
+
+  // ── FLOOR 2 UNITS ──
+  const F2 = {
+    // Top wall (2900s)
+    ...spreadUnits(['2901','2902','2903','2904','2905','2906','2907','2908','2909','2910','2911','2912','2913'],
+                   {x1:0.178,y1:0.040,x2:0.455,y2:0.060}, 'h'),
+    ...spreadUnits(['2915','2916','2917','2918','2919','2920','2921','2922','2923','2924','2925','2926','2927',
+                    '2928','2929','2930','2931','2932','2933','2934','2935','2936','2937','2938','2939','2940',
+                    '2941','2942','2943','2944','2945','2946'],
+                   {x1:0.455,y1:0.040,x2:0.995,y2:0.060}, 'h'),
+    '2914': [0.381, 0.048],
+
+    // Second row (2800s)
+    ...spreadUnits(['2801','2802','2803','2804','2805','2806','2807'],
+                   {x1:0.210,y1:0.128,x2:0.527,y2:0.145}, 'h'),
+    '2808': [0.527, 0.128], '2809': [0.556, 0.128],
+    ...spreadUnits(['2810','2811','2812','2813','2814','2815','2816','2817','2818','2819','2820','2821','2822','2823','2824'],
+                   {x1:0.560,y1:0.128,x2:0.876,y2:0.145}, 'h'),
+    '2201': [0.178, 0.108], '2202': [0.178, 0.133], '2203': [0.178, 0.155],
+
+    // Left wall column (2053-2075)
+    ...spreadUnits(['2053','2052','2054','2051','2055','2050','2056','2049','2057','2048','2058','2047','2059',
+                    '2046','2060','2045','2061','2044','2062','2043','2063','2042','2064','2041','2065','2040',
+                    '2066','2039','2067','2038','2068','2037','2069','2036','2070','2035','2071','2034','2072',
+                    '2033','2073'],
+                   {x1:0.035,y1:0.175,x2:0.055,y2:0.890}, 'v'),
+    ...spreadUnits(['2074','2075'],
+                   {x1:0.065,y1:0.878,x2:0.100,y2:0.893}, 'h'),
+
+    // 2100s column
+    ...spreadUnits(['2101','2102','2103','2104','2105','2106','2107','2108','2109','2110','2111','2112','2113','2114'],
+                   {x1:0.152,y1:0.048,x2:0.165,y2:0.700}, 'v'),
+
+    // 2000s column (left)
+    ...spreadUnits(['2013','2012','2011','2010','2009','2008','2007','2006','2005','2004','2003','2002','2001'],
+                   {x1:0.118,y1:0.160,x2:0.132,y2:0.880}, 'v'),
+
+    // 2700s row
+    ...spreadUnits(['2701','2702','2703','2704','2705','2706','2707','2708','2709','2710','2711'],
+                   {x1:0.210,y1:0.245,x2:0.520,y2:0.262}, 'h'),
+    ...spreadUnits(['2612','2613','2614','2615','2616'],
+                   {x1:0.527,y1:0.218,x2:0.540,y2:0.315}, 'v'),
+
+    // 2600s row
+    ...spreadUnits(['2601','2602','2603','2604','2605','2606','2607','2608','2609','2610','2611'],
+                   {x1:0.210,y1:0.308,x2:0.520,y2:0.325}, 'h'),
+    '2204': [0.180, 0.245], '2205': [0.180, 0.268], '2206': [0.180, 0.290],
+    '2207': [0.180, 0.313], '2208': [0.180, 0.335],
+
+    // 2617-2628 right block
+    ...spreadUnits(['2617','2618','2619','2620','2621','2622','2623','2624','2625','2626','2627','2628'],
+                   {x1:0.545,y1:0.218,x2:0.750,y2:0.235}, 'h'),
+    ...spreadUnits(['2629','2630','2631','2632','2633','2634','2635','2636','2637','2638','2639','2640','2641','2642'],
+                   {x1:0.545,y1:0.298,x2:0.750,y2:0.315}, 'h'),
+
+    // 2500s row
+    ...spreadUnits(['2501','2502','2503','2504','2505','2506','2507','2508','2509','2510','2511'],
+                   {x1:0.210,y1:0.408,x2:0.520,y2:0.425}, 'h'),
+    '2209': [0.180, 0.370], '2210': [0.180, 0.395], '2211': [0.180, 0.418],
+    '2212': [0.180, 0.440], '2213': [0.180, 0.463], '2214': [0.180, 0.485],
+    '2215': [0.180, 0.508],
+    '2446': [0.527, 0.448], '2447': [0.527, 0.418], '2445': [0.527, 0.478], '2444': [0.527, 0.508],
+
+    // 2400s row
+    ...spreadUnits(['2401','2402','2403','2404','2405','2406','2407','2408','2409','2410','2411'],
+                   {x1:0.210,y1:0.508,x2:0.520,y2:0.525}, 'h'),
+
+    // Right block 2448-2473, 2428-2443
+    ...spreadUnits(['2448','2449'],
+                   {x1:0.545,y1:0.368,x2:0.560,y2:0.408}, 'v'),
+    ...spreadUnits(['2512','2513','2514','2515','2516','2517','2518','2519','2520','2521','2522','2523','2524','2525'],
+                   {x1:0.545,y1:0.365,x2:0.750,y2:0.380}, 'h'),
+    ...spreadUnits(['2450','2451','2452','2453','2454','2455','2456','2457','2458','2459','2460','2461','2462','2463',
+                    '2464','2465','2466','2467','2468','2469','2470','2471','2472','2473'],
+                   {x1:0.545,y1:0.440,x2:0.750,y2:0.458}, 'h'),
+    ...spreadUnits(['2428','2429','2430','2431','2432','2433','2434','2435','2436','2437','2438','2439'],
+                   {x1:0.545,y1:0.480,x2:0.750,y2:0.498}, 'h'),
+    ...spreadUnits(['2412','2413','2414','2415','2416','2417','2418','2419','2420','2421','2422','2423'],
+                   {x1:0.545,y1:0.518,x2:0.750,y2:0.535}, 'h'),
+
+    // 2300s row
+    ...spreadUnits(['2302','2303','2304','2305','2306','2307','2308','2309','2310','2311','2312'],
+                   {x1:0.210,y1:0.600,x2:0.520,y2:0.618}, 'h'),
+    '2313': [0.527, 0.595], '2264': [0.527, 0.635], '2263': [0.527, 0.670],
+    '2216': [0.180, 0.598], '2217': [0.210, 0.598],
+    ...spreadUnits(['2314','2315','2316','2317','2318','2319','2320','2321','2322','2323','2324','2325'],
+                   {x1:0.545,y1:0.588,x2:0.750,y2:0.605}, 'h'),
+    '2265': [0.527, 0.650], '2266': [0.527, 0.665], '2267': [0.527, 0.680], '2268': [0.527, 0.695],
+    ...spreadUnits(['2269','2270','2271','2272','2273','2274','2275','2276','2277','2278','2279','2280'],
+                   {x1:0.545,y1:0.648,x2:0.750,y2:0.665}, 'h'),
+
+    // 2200s (bottom section)
+    ...spreadUnits(['2219','2220','2221','2222','2223','2224','2225','2226','2227','2228','2229'],
+                   {x1:0.148,y1:0.700,x2:0.505,y2:0.718}, 'h'),
+    '2230': [0.512, 0.700],
+    ...spreadUnits(['2218'],{x1:0.138,y1:0.707,x2:0.148,y2:0.715},'h'),
+
+    // Right block 2251-2262, 2235-2246
+    ...spreadUnits(['2231','2232','2233','2234'],
+                   {x1:0.545,y1:0.695,x2:0.570,y2:0.760}, 'v'),
+    ...spreadUnits(['2262','2261','2260','2259','2258','2257','2256','2255','2254','2253','2252','2251'],
+                   {x1:0.545,y1:0.718,x2:0.750,y2:0.735}, 'h'),
+    ...spreadUnits(['2235','2236','2237','2238','2239','2240','2241','2242','2243','2244','2245','2246'],
+                   {x1:0.545,y1:0.800,x2:0.750,y2:0.818}, 'h'),
+
+    // Far right column 2144-2158
+    ...spreadUnits(['2158','2157','2156','2155','2154','2153','2152','2151','2150','2149','2148','2147','2146','2145','2144'],
+                   {x1:0.958,y1:0.160,x2:0.972,y2:0.875}, 'v'),
+    // Small right-side units 2826,2827 etc
+    '2826': [0.893, 0.138], '2827': [0.893, 0.125],
+    '2643': [0.762, 0.200], '2644': [0.762, 0.218],
+    '2642': [0.762, 0.240], '2641': [0.762, 0.262],
+
+    // Bottom row 2001 large + 2115-2130, 2131-2143
+    '2001_lg': [0.315, 0.905],
+    ...spreadUnits(['2115'],{x1:0.178,y1:0.848,x2:0.210,y2:0.868},'h'),
+    ...spreadUnits(['2116','2117','2118','2119','2120'],
+                   {x1:0.210,y1:0.800,x2:0.250,y2:0.868}, 'v'),
+    ...spreadUnits(['2121','2122','2123','2124'],
+                   {x1:0.270,y1:0.858,x2:0.400,y2:0.875}, 'h'),
+    '2125': [0.403, 0.848], '2126': [0.403, 0.828], '2127': [0.403, 0.808],
+    '2128': [0.455, 0.858], '2129': [0.480, 0.868], '2130': [0.524, 0.858],
+    ...spreadUnits(['2131','2132','2133','2134','2135','2136','2137','2138','2139','2140','2141','2142','2143'],
+                   {x1:0.545,y1:0.868,x2:0.920,y2:0.885}, 'h'),
+  };
+
+  // ── Which floor does each unit belong to? ──
+  const UNIT_FLOOR = {};
+  Object.keys(F1).forEach(id => { UNIT_FLOOR[id] = '1'; });
+  Object.keys(F2).forEach(id => { UNIT_FLOOR[id] = '2'; });
+
+  const UNIT_POS = { ...F1, ...F2 };
+
+  // ── FLOOR CONFIG ──
+  const FLOORS = {
+    '1': {
+      img: 'floor1.png',
+      name: { en: 'Floor 1', fr: 'Étage 1' },
+      // Entrance: elevator/stairs area at bottom centre of the image
+      entrance: [0.375, 0.840],
+      // Key corridor waypoints [x,y] — used to build the path
+      corridorNodes: [
+        [0.375, 0.840], // entrance (elevator lobby)
+        [0.375, 0.790], // top of entrance corridor
+        [0.375, 0.680],
+        [0.375, 0.540],
+        [0.375, 0.440],
+        [0.375, 0.260],
+        [0.375, 0.160],
+        [0.375, 0.060],
+        [0.200, 0.060], [0.500, 0.060], [0.700, 0.060], [0.880, 0.060], // top horizontal
+        [0.110, 0.160], [0.500, 0.160], [0.700, 0.160],                  // H1
+        [0.110, 0.260], [0.500, 0.260], [0.700, 0.260],                  // H2
+        [0.110, 0.440], [0.500, 0.440], [0.700, 0.440],                  // H3
+        [0.110, 0.540], [0.500, 0.540], [0.700, 0.540],                  // H4
+        [0.110, 0.680], [0.500, 0.680], [0.700, 0.680],                  // H5
+        [0.110, 0.060], [0.110, 0.800], [0.700, 0.800], [0.880, 0.800], // verticals
+        [0.880, 0.440], [0.880, 0.260],
+      ],
+    },
+    '2': {
+      img: 'floor2.png',
+      name: { en: 'Floor 2', fr: 'Étage 2' },
+      entrance: [0.382, 0.840],
+      corridorNodes: [
+        [0.382, 0.840],
+        [0.382, 0.790],
+        [0.382, 0.700],
+        [0.382, 0.600],
+        [0.382, 0.510],
+        [0.382, 0.410],
+        [0.382, 0.310],
+        [0.382, 0.160],
+        [0.382, 0.060],
+        [0.200, 0.060], [0.550, 0.060], [0.760, 0.060], [0.960, 0.060],
+        [0.140, 0.160], [0.550, 0.160], [0.760, 0.160],
+        [0.140, 0.310], [0.550, 0.310], [0.760, 0.310],
+        [0.140, 0.410], [0.550, 0.410], [0.760, 0.410],
+        [0.140, 0.510], [0.550, 0.510], [0.760, 0.510],
+        [0.140, 0.600], [0.550, 0.600], [0.760, 0.600],
+        [0.140, 0.700], [0.550, 0.700], [0.760, 0.700],
+        [0.140, 0.840], [0.760, 0.840], [0.960, 0.840],
+        [0.140, 0.060], [0.960, 0.410], [0.960, 0.600],
+      ],
+    },
+  };
+
+  // ── PATHFINDING (BFS on corridor graph + nearest-node) ──
+  function dist(a, b) {
+    return Math.hypot(a[0] - b[0], a[1] - b[1]);
+  }
+
+  function buildPath(floorId, unitPos) {
+    const floor = FLOORS[floorId];
+    const nodes = floor.corridorNodes;
+    const entrance = floor.entrance;
+
+    // Find nearest corridor node to unit
+    let nearUnit = 0;
+    nodes.forEach((n, i) => { if (dist(n, unitPos) < dist(nodes[nearUnit], unitPos)) nearUnit = i; });
+    // Find nearest corridor node to entrance (should be index 0)
+    let nearEntrance = 0;
+    nodes.forEach((n, i) => { if (dist(n, entrance) < dist(nodes[nearEntrance], entrance)) nearEntrance = i; });
+
+    // BFS on fully-connected corridor graph (small N so brute-force is fine)
+    const n = nodes.length;
+    const INF = 1e9;
+    const d = Array(n).fill(INF);
+    const prev = Array(n).fill(-1);
+    d[nearEntrance] = 0;
+    const visited = new Set();
+
+    for (let iter = 0; iter < n; iter++) {
+      let u = -1;
+      for (let i = 0; i < n; i++) {
+        if (!visited.has(i) && (u === -1 || d[i] < d[u])) u = i;
+      }
+      if (u === -1 || d[u] === INF) break;
+      visited.add(u);
+      for (let v = 0; v < n; v++) {
+        if (visited.has(v)) continue;
+        const w = dist(nodes[u], nodes[v]);
+        if (d[u] + w < d[v]) { d[v] = d[u] + w; prev[v] = u; }
+      }
+    }
+
+    // Reconstruct path through nodes
+    const pathNodes = [];
+    for (let cur = nearUnit; cur !== -1; cur = prev[cur]) pathNodes.unshift(nodes[cur]);
+
+    // Full path: entrance → corridor path → unit
+    const full = [entrance, ...pathNodes.slice(1), unitPos];
+
+    // Simplify: remove collinear/redundant nodes
+    return simplifyPath(full, 0.015);
+  }
+
+  function simplifyPath(pts, tol) {
+    if (pts.length <= 2) return pts;
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) {
+      const prev = out[out.length - 1], curr = pts[i], next = pts[i + 1];
+      const cross = Math.abs((curr[0]-prev[0])*(next[1]-prev[1]) - (curr[1]-prev[1])*(next[0]-prev[0]));
+      if (cross > tol) out.push(curr);
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+
+  // ── DIRECTION GENERATOR ──
+  function getDirection(floorId, unitId, pos, lang) {
+    const [x, y] = pos;
+    const floorLabel = FLOORS[floorId].name[lang];
+
+    // Zone labels in both languages
+    let zone;
+    if (y < 0.12) {
+      zone = { en: 'along the top corridor', fr: 'le long du couloir supérieur' };
+    } else if (x < 0.10) {
+      zone = { en: 'along the left wall', fr: 'le long du mur gauche' };
+    } else if (x > 0.90) {
+      zone = { en: 'along the right wall', fr: 'le long du mur droit' };
+    } else if (y > 0.78) {
+      zone = { en: 'near the loading area', fr: 'près de la zone de chargement' };
+    } else if (x < 0.30) {
+      zone = { en: 'in the left section', fr: 'dans la section gauche' };
+    } else if (x > 0.70) {
+      zone = { en: 'in the right section', fr: 'dans la section droite' };
+    } else {
+      zone = { en: 'in the central section', fr: 'dans la section centrale' };
+    }
+
+    if (lang === 'en') {
+      return `Take the elevator to ${floorLabel}. Follow the highlighted path — unit ${unitId} is ${zone.en}.`;
+    } else {
+      return `Prenez l'ascenseur jusqu'à ${floorLabel}. Suivez le chemin indiqué — l'unité ${unitId} se trouve ${zone.fr}.`;
+    }
+  }
+
+  // ── CANVAS DRAWING ──
+  let animFrame = null;
+
+  function drawPath(canvas, img, pathPts, unitPos, progress) {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    canvas.width  = img.offsetWidth  * devicePixelRatio;
+    canvas.height = img.offsetHeight * devicePixelRatio;
+    const scaleX = canvas.width  / W;
+    const scaleY = canvas.height / H;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!pathPts || pathPts.length < 2) return;
+
+    // Convert fractional coords to canvas pixels
+    const toCanvas = ([fx, fy]) => [fx * W * scaleX, fy * H * scaleY];
+    const pts = pathPts.map(toCanvas);
+
+    // Total length for progress animation
+    let totalLen = 0;
+    const segs = [];
+    for (let i = 1; i < pts.length; i++) {
+      const l = Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+      totalLen += l;
+      segs.push(l);
+    }
+
+    const drawn = totalLen * progress;
+    let remaining = drawn;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur  = 6 * devicePixelRatio;
+
+    // Black outline
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth   = 5 * devicePixelRatio;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) {
+      const l = segs[i-1];
+      if (remaining <= 0) break;
+      if (remaining >= l) {
+        ctx.lineTo(pts[i][0], pts[i][1]);
+        remaining -= l;
+      } else {
+        const t = remaining / l;
+        ctx.lineTo(pts[i-1][0] + t*(pts[i][0]-pts[i-1][0]),
+                   pts[i-1][1] + t*(pts[i][1]-pts[i-1][1]));
+        remaining = 0;
+      }
+    }
+    ctx.stroke();
+
+    // Lime overlay
+    ctx.shadowBlur  = 0;
+    ctx.strokeStyle = '#ddfa00';
+    ctx.lineWidth   = 2.5 * devicePixelRatio;
+    remaining = drawn;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) {
+      const l = segs[i-1];
+      if (remaining <= 0) break;
+      if (remaining >= l) {
+        ctx.lineTo(pts[i][0], pts[i][1]);
+        remaining -= l;
+      } else {
+        const t = remaining / l;
+        ctx.lineTo(pts[i-1][0] + t*(pts[i][0]-pts[i-1][0]),
+                   pts[i-1][1] + t*(pts[i][1]-pts[i-1][1]));
+        remaining = 0;
+      }
+    }
+    ctx.stroke();
+
+    // Origin dot
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur  = 4 * devicePixelRatio;
+    ctx.fillStyle   = '#111111';
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], 6 * devicePixelRatio, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Destination pin (draw when path is ≥90% complete)
+    if (progress >= 0.9) {
+      const [ux, uy] = toCanvas(unitPos);
+      const r = 10 * devicePixelRatio;
+      ctx.shadowBlur = 6 * devicePixelRatio;
+      ctx.fillStyle = '#ddfa00';
+      ctx.strokeStyle = '#111111';
+      ctx.lineWidth = 2.5 * devicePixelRatio;
+      // Pin shape
+      ctx.beginPath();
+      ctx.arc(ux, uy - r, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ux - r * 0.5, uy - r);
+      ctx.lineTo(ux, uy + r * 0.4);
+      ctx.lineTo(ux + r * 0.5, uy - r);
+      ctx.fillStyle = '#ddfa00';
+      ctx.fill();
+      ctx.strokeStyle = '#111111';
+      ctx.stroke();
+      // Inner dot
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#111111';
+      ctx.beginPath();
+      ctx.arc(ux, uy - r, r * 0.38, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function animatePath(canvas, img, pathPts, unitPos) {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    const duration = 900;
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      drawPath(canvas, img, pathPts, unitPos, ease);
+      if (t < 1) animFrame = requestAnimationFrame(step);
+    }
+    animFrame = requestAnimationFrame(step);
+  }
+
+  // ── STATE ──
+  let lang = 'fr';
+  let activeFloor = '1';
+  let activeUnit = null;
+  let activePath = null;
+  let pz = null;
+
+  // ── DOM ──
+  const $lang   = document.getElementById('langToggle');
+  const $fr     = document.getElementById('langFr');
+  const $en     = document.getElementById('langEn');
+  const $input  = document.getElementById('unitInput');
+  const $btn    = document.getElementById('findBtn');
+  const $fb     = document.getElementById('inputFeedback');
+  const $result = document.getElementById('resultCard');
+  const $rLabel = document.getElementById('resultLabel');
+  const $rMain  = document.getElementById('resultMain');
+  const $rDir   = document.getElementById('resultDir');
+  const $title  = document.getElementById('mapTitle');
+  const $switch = document.getElementById('floorSwitch');
+  const $img    = document.getElementById('mapImg');
+  const $canvas = document.getElementById('mapCanvas');
+
+  // ── LANGUAGE ──
+  function setLang(l) {
+    lang = l;
+    document.body.className  = 'lang-' + l;
+    document.documentElement.lang = l;
+    $fr.classList.toggle('active', l === 'fr');
+    $en.classList.toggle('active', l === 'en');
+    document.title = l === 'en'
+      ? 'Pandora Self-Storage — Find my unit'
+      : 'Pandora Mini-Entrepôts — Trouver mon unité';
+    $title.textContent = FLOORS[activeFloor].name[l];
+    if (activeUnit) showResult(activeUnit, activeFloor);
+  }
+  $lang.addEventListener('click', () => setLang(lang === 'fr' ? 'en' : 'fr'));
+
+  // ── FLOOR SWITCH ──
+  function buildFloorButtons() {
+    $switch.innerHTML = '';
+    Object.keys(FLOORS).forEach(id => {
+      const btn = document.createElement('button');
+      btn.className = 'floor-btn' + (id === activeFloor ? ' active' : '');
+      btn.textContent = id;
+      btn.dataset.floor = id;
+      btn.setAttribute('role', 'tab');
+      btn.addEventListener('click', () => selectFloor(id));
+      $switch.appendChild(btn);
+    });
+  }
+
+  function selectFloor(id) {
+    activeFloor = id;
+    $switch.querySelectorAll('.floor-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.floor === id));
+    $title.textContent = FLOORS[id].name[lang];
+    loadFloorImage(id, () => {
+      if (activeUnit && UNIT_FLOOR[activeUnit] === id) {
+        redrawPath();
+      } else {
+        clearCanvas();
+      }
+    });
+  }
+
+  function loadFloorImage(id, cb) {
+    const src = FLOORS[id].img;
+    if ($img.dataset.loaded === src) { cb && cb(); return; }
+    $img.onload = () => { $img.dataset.loaded = src; cb && cb(); };
+    $img.onerror = () => { $img.dataset.loaded = ''; cb && cb(); };
+    $img.src = src;
+    $img.alt = FLOORS[id].name[lang];
+  }
+
+  function clearCanvas() {
+    const ctx = $canvas.getContext('2d');
+    ctx.clearRect(0, 0, $canvas.width, $canvas.height);
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  }
+
+  function redrawPath() {
+    if (!activeUnit || !activePath) return;
+    const pos = UNIT_POS[activeUnit];
+    animatePath($canvas, $img, activePath, pos);
+  }
+
+  // ── SEARCH ──
+  function findUnit(val) {
+    const id = val.trim();
+    if (!id) { setFeedback(''); return; }
+
+    const floor = UNIT_FLOOR[id];
+    if (!floor) {
+      setFeedback(lang === 'fr' ? `Unité « ${id} » introuvable.` : `Unit "${id}" not found.`);
+      $input.classList.add('error');
+      $result.classList.remove('show');
+      activeUnit = null; activePath = null;
+      return;
+    }
+
+    setFeedback('');
+    $input.classList.remove('error');
+    activeUnit = id;
+    activePath = buildPath(floor, UNIT_POS[id]);
+
+    if (floor !== activeFloor) {
+      selectFloor(floor);
+      setTimeout(redrawPath, 200); // wait for image load
+    } else {
+      redrawPath();
+    }
+    showResult(id, floor);
+  }
+
+  function showResult(id, floor) {
+    $rLabel.textContent = lang === 'fr' ? `Unité ${id}` : `Unit ${id}`;
+    $rMain.textContent  = FLOORS[floor].name[lang];
+    $rDir.textContent   = getDirection(floor, id, UNIT_POS[id], lang);
+    $result.classList.add('show');
+  }
+
+  function setFeedback(msg) {
+    $fb.textContent = msg;
+    if (!msg) $input.classList.remove('error');
+  }
+
+  $btn.addEventListener('click', () => findUnit($input.value));
+  $input.addEventListener('keydown', e => { if (e.key === 'Enter') findUnit($input.value); });
+  $input.addEventListener('input', () => { if ($input.classList.contains('error')) setFeedback(''); });
+
+  // Resize observer: redraw path when image resizes (e.g. orientation change)
+  new ResizeObserver(() => { if (activeUnit) redrawPath(); }).observe($img);
+
+  // ── PANZOOM ──
+  function initPanzoom() {
+    if (pz) { pz.destroy(); pz = null; }
+    const viewport = document.getElementById('mapViewport');
+    pz = Panzoom($img.parentElement, {
+      minScale: 1, maxScale: 5, startScale: 1,
+      contain: 'outside', animate: true,
+    });
+    viewport.addEventListener('wheel', e => pz.zoomWithWheel(e), { passive: false });
+  }
+
+  // ── INIT ──
+  buildFloorButtons();
+  loadFloorImage('1', initPanzoom);
+  setLang('fr');
+  setTimeout(() => $input.focus(), 400);
+  </script>
+</body>
+</html>
