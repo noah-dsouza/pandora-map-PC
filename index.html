@@ -1022,6 +1022,23 @@
 
   // ── CANVAS DRAWING ──
   let animFrame = null;
+  const DEBUG_GRID = location.search.includes('debug');
+
+  function drawGridDebug(canvas, img, grid) {
+    if (!grid) return;
+    const W = img.naturalWidth, H = img.naturalHeight;
+    canvas.width  = img.offsetWidth  * devicePixelRatio;
+    canvas.height = img.offsetHeight * devicePixelRatio;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cellW = canvas.width / GW, cellH = canvas.height / GH;
+    ctx.fillStyle = 'rgba(0,255,0,0.4)';
+    for (let r = 0; r < GH; r++) {
+      for (let c = 0; c < GW; c++) {
+        if (grid[r*GW+c]) ctx.fillRect(c*cellW, r*cellH, cellW, cellH);
+      }
+    }
+  }
 
   function drawPath(canvas, img, pathPts, unitPos, progress) {
     const W = img.naturalWidth, H = img.naturalHeight;
@@ -1031,6 +1048,8 @@
     const scaleY = canvas.height / H;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (DEBUG_GRID) { drawGridDebug(canvas, img, walkGrids[activeFloor]); return; }
 
     if (!pathPts || pathPts.length < 2) return;
 
