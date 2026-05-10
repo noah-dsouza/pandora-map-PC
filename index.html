@@ -860,7 +860,7 @@
     _dn(i) { const n=this.h.length; for(;;){let m=i,l=2*i+1,r=2*i+2; if(l<n&&this.h[l][0]<this.h[m][0])m=l; if(r<n&&this.h[r][0]<this.h[m][0])m=r; if(m===i)break;[this.h[m],this.h[i]]=[this.h[i],this.h[m]];i=m;} }
   }
 
-  // Snap a grid cell to the nearest walkable cell (BFS)
+  // Grid cell snapshot to find the nearest walkable cell (BFS)
   function snapWalk(grid, c, r) {
     if (c>=0&&c<GW&&r>=0&&r<GH&&grid[r*GW+c]) return [c,r];
     const q=[[c,r]], vis=new Set([r*GW+c]);
