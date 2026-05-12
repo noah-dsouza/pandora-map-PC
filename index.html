@@ -981,7 +981,22 @@
     let cur = nearIdx;
     while (cur !== -1) { path.unshift([...nodes[cur]]); cur = prev[cur]; }
     path.push(unitPos);
-    return path;
+    return snapAxes(path);
+  }
+
+  function snapAxes(path) {
+    if (path.length < 2) return path;
+    const out = [path[0]];
+    for (let i = 1; i < path.length - 1; i++) {
+      const [ax, ay] = out[out.length - 1];
+      let [bx, by] = path[i];
+      const dx = Math.abs(bx - ax), dy = Math.abs(by - ay);
+      if (dy > dx * 3) bx = ax;       // predominantly vertical → snap x
+      else if (dx > dy * 3) by = ay;  // predominantly horizontal → snap y
+      out.push([bx, by]);
+    }
+    out.push(path[path.length - 1]);
+    return out;
   }
 
   // ── PATH BUILDER ──
