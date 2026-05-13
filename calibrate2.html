@@ -68,7 +68,7 @@ svg.mode-delete { cursor: not-allowed; }
 
 <div class="map-area" id="mapArea">
   <div class="map-wrapper" id="mapWrapper">
-    <img id="floorImg" src="floor1.png" draggable="false">
+    <img id="floorImg" src="floor1-simple.png" draggable="false">
     <svg id="overlay"></svg>
   </div>
 </div>
@@ -100,7 +100,7 @@ let undoStack = [];
 
 // Load from localStorage
 try {
-  const saved = localStorage.getItem('pandora_calib_v2');
+  const saved = localStorage.getItem('pandora_calib_v3');
   if (saved) state = JSON.parse(saved);
 } catch(e) {}
 
@@ -109,7 +109,7 @@ try {
 function fs() { return state[currentFloor]; }
 
 function persist() {
-  try { localStorage.setItem('pandora_calib_v2', JSON.stringify(state)); } catch(e) {}
+  try { localStorage.setItem('pandora_calib_v3', JSON.stringify(state)); } catch(e) {}
 }
 
 function pushUndo() {
