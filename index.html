@@ -806,8 +806,11 @@
     },
   };
 
-  // Corridor graphs cleared — pixel-based A* routing used instead.
-  // Re-calibrate via calibrate2.html and paste the exported JSON here if needed.
+  // ── CORRIDOR GRAPHS ──────────────────────────────────────────────────────────
+  // HOW TO UPDATE: open calibrate2.html → trace all corridors on each floor
+  // (your FIRST click = elevator/entrance node ★) → click "Copy for index.html"
+  // → paste over this ENTIRE block, from "const CORRIDOR_GRAPHS" to its closing };
+  // ─────────────────────────────────────────────────────────────────────────────
   const CORRIDOR_GRAPHS = { '1': { nodes: [], edges: [] }, '2': { nodes: [], edges: [] } };
 
   // ── PIXEL-BASED WALKABILITY GRID ──
