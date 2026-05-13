@@ -2,10 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Corridor Calibration Tool</title>
+<title>Pandora — Corridor Calibration</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: sans-serif; background: #111; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Brand bar ── */
+.brand-bar {
+  display: flex; align-items: center; gap: 12px;
+  background: #ddfa00; padding: 6px 14px; flex-shrink: 0;
+}
+.brand-bar img { height: 38px; width: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.brand-name { font-weight: 900; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; color: #111; line-height: 1.1; }
+.brand-sub  { font-size: 10px; font-weight: 600; color: rgba(0,0,0,0.5); letter-spacing: 0.12em; text-transform: uppercase; }
 
 .toolbar {
   display: flex; align-items: center; gap: 8px; padding: 8px 14px;
@@ -22,9 +31,16 @@ body { font-family: sans-serif; background: #111; color: #fff; height: 100vh; di
 .sep { width: 1px; height: 28px; background: #444; flex-shrink: 0; }
 .hint-box {
   background: #2a2200; border: 1px solid #665500; border-radius: 4px;
-  padding: 4px 10px; font-size: 12px; color: #ffcc44;
+  padding: 4px 10px; font-size: 12px; color: #ddfa00;
 }
 .stats { font-size: 12px; color: #888; margin-left: auto; }
+
+/* ── Entrance reminder banner ── */
+.entrance-banner {
+  background: #003300; border-bottom: 2px solid #00cc44;
+  padding: 5px 14px; font-size: 12px; color: #00ee66; flex-shrink: 0; line-height: 1.5;
+}
+.entrance-banner b { color: #ddfa00; }
 
 .map-area { flex: 1; overflow-y: auto; overflow-x: hidden; background: #0a0a0a; }
 .map-wrapper { position: relative; width: 100%; }
@@ -36,19 +52,32 @@ svg.mode-delete { cursor: not-allowed; }
   flex-shrink: 0; background: #1a1a1a; border-top: 1px solid #333;
   padding: 6px 14px; font-size: 11px; color: #888; line-height: 1.7;
 }
-.instructions b { color: #ffcc44; }
+.instructions b { color: #ddfa00; }
 
 #output-area {
   display: none; flex-shrink: 0; background: #0a0a0a; border-top: 2px solid #00aa00;
-  padding: 10px 14px; max-height: 180px; overflow-y: auto;
+  padding: 10px 14px; max-height: 200px; overflow-y: auto;
 }
+#output-area p { font-size: 11px; color: #0a0; margin-bottom: 4px; }
 #output-area textarea {
-  width: 100%; height: 130px; background: #111; color: #0f0; font-family: monospace;
-  font-size: 11px; border: 1px solid #333; padding: 6px; resize: none;
+  width: 100%; height: 140px; background: #111; color: #0f0; font-family: monospace;
+  font-size: 10px; border: 1px solid #333; padding: 6px; resize: none;
 }
 </style>
 </head>
 <body>
+
+<div class="brand-bar">
+  <img src="logo.jpg" alt="Pandora logo">
+  <div>
+    <div class="brand-name">Pandora Self-Storage</div>
+    <div class="brand-sub">Corridor Calibration Tool</div>
+  </div>
+</div>
+
+<div class="entrance-banner" id="entranceBanner">
+  ⭐ <b>Node 0 = Entrance / Elevator.</b> Your <b>first click</b> on each floor sets the starting point — place it at the elevator door or main entrance, then trace outward along every corridor.
+</div>
 
 <div class="toolbar">
   <button onclick="setFloor('1')" id="btn-f1" class="active">Floor 1</button>
@@ -60,7 +89,7 @@ svg.mode-delete { cursor: not-allowed; }
   <button onclick="undo()">↩ Undo</button>
   <button onclick="clearFloor()" class="danger">🗑 Clear Floor</button>
   <div class="sep"></div>
-  <button onclick="exportJSON()" class="export">📋 Copy JSON</button>
+  <button onclick="exportForIndex()" class="export">📋 Copy for index.html</button>
   <div class="sep"></div>
   <span class="hint-box" id="hint">Click along corridors to trace paths</span>
   <span class="stats" id="stats"></span>
@@ -74,10 +103,12 @@ svg.mode-delete { cursor: not-allowed; }
 </div>
 
 <div class="instructions">
-  <b>Trace mode:</b> Click along the corridor center to lay nodes — each click auto-connects to the previous.
-  &nbsp;|&nbsp; <b>Click an existing node</b> (yellow dot) to branch from it.
-  &nbsp;|&nbsp; <b>★ Node 0</b> = elevator / entrance (first node you place).
-  &nbsp;|&nbsp; <b>Delete mode:</b> click a node to remove it + its edges, or click near a line to remove just that edge.
+  <b>Workflow:</b>
+  1. <b>First click</b> = entrance / elevator (green ★). Place it at the lift door.
+  &nbsp; 2. Keep clicking along corridor centres — nodes auto-connect to the previous one.
+  &nbsp; 3. <b>Click an existing node</b> to branch from it (cover every corridor arm).
+  &nbsp; 4. <b>Delete mode:</b> click a node to remove it + edges, or click near a line to remove that edge.
+  &nbsp; 5. When done: <b>Copy for index.html</b> → open index.html → find <code>CORRIDOR_GRAPHS</code> → replace the whole object with what you pasted.
   &nbsp;|&nbsp; <b>Ctrl+Z</b> = undo.
 </div>
 
@@ -353,25 +384,48 @@ function render() {
 
 // ── Export ──────────────────────────────────────────────────────
 
-function exportJSON() {
-  const out = {};
+function fmtNodes(nodes) {
+  if (!nodes.length) return '        []';
+  const rows = [];
+  for (let i = 0; i < nodes.length; i += 6) {
+    const chunk = nodes.slice(i, i + 6)
+      .map(n => `[${n.x.toFixed(4)},${n.y.toFixed(4)}]`).join(', ');
+    rows.push('        ' + chunk);
+  }
+  return rows.join(',\n');
+}
+
+function fmtEdges(edges) {
+  if (!edges.length) return '        []';
+  const rows = [];
+  for (let i = 0; i < edges.length; i += 10) {
+    const chunk = edges.slice(i, i + 10)
+      .map(([a, b]) => `[${a},${b}]`).join(', ');
+    rows.push('        ' + chunk);
+  }
+  return rows.join(',\n');
+}
+
+function exportForIndex() {
+  let out = `  const CORRIDOR_GRAPHS = {\n`;
   for (const f of ['1', '2']) {
     const { nodes, edges } = state[f];
-    out[f] = {
-      entrance: 0,
-      nodes: nodes.map(n => [+n.x.toFixed(4), +n.y.toFixed(4)]),
-      edges,
-    };
+    const nodeArr = nodes.map(n => [+n.x.toFixed(4), +n.y.toFixed(4)]);
+    out += `    '${f}': {\n`;
+    out += `      entrance: 0,\n`;
+    out += `      nodes: [\n${fmtNodes(nodes)},\n      ],\n`;
+    out += `      edges: [\n${fmtEdges(edges)},\n      ],\n`;
+    out += `    },\n`;
   }
-  const json = JSON.stringify(out, null, 2);
+  out += `  };`;
 
   const area = document.getElementById('output-area');
-  document.getElementById('outputText').value = json;
+  document.getElementById('outputText').value = out;
   area.style.display = 'block';
 
-  navigator.clipboard.writeText(json)
-    .then(() => alert('✅ JSON copied to clipboard! Paste it to the developer.'))
-    .catch(() => alert('JSON is in the text box below — copy it manually.'));
+  navigator.clipboard.writeText(out)
+    .then(() => alert('✅ Copied!\n\nIn index.html find the line:\n  const CORRIDOR_GRAPHS = ...\nand replace the whole object (down to the closing };) with what you just copied.'))
+    .catch(() => alert('Copy the text from the box below, then paste it over CORRIDOR_GRAPHS in index.html.'));
 }
 
 // ── Init ────────────────────────────────────────────────────────
