@@ -826,9 +826,6 @@
         [0,1], [1,2], [2,3], [3,4], [4,5], [4,6], [7,8], [8,9], [9,10], [10,11],
         [11,12], [12,13], [13,14], [14,15], [15,16], [16,17], [9,18], [18,19], [18,20], [20,21],
         [20,22], [22,23], [22,24], [25,26], [27,28], [20,29], [30,31], [32,33], [34,35],
-        // wire disconnected segments back to main graph
-        [1,5], [3,23], [6,7], [8,30], [30,32], [32,4], [31,25], [25,22], [26,15], [26,35],
-        [27,16], [29,16], [17,28], [33,4], [24,15], [35,14],
       ],
     },
     '2': {
@@ -847,10 +844,6 @@
         [10,11], [11,12], [12,13], [13,14], [13,15], [9,16], [17,18], [2,19], [20,21], [22,23],
         [24,25], [4,26], [26,27], [23,28], [28,29], [30,31], [32,33], [34,35], [35,36], [31,37],
         [37,38], [33,39], [39,40], [26,41],
-        // wire disconnected segments back to main graph
-        [1,17], [1,16], [9,15], [10,13], [11,20], [20,22], [22,24], [8,20],
-        [19,7], [21,7], [27,21], [23,30], [25,30], [29,27], [30,25], [31,26],
-        [32,25], [33,26], [34,21], [35,29], [36,29], [37,31], [38,34], [39,33], [40,34], [41,6],
       ],
     },
   };
@@ -1010,7 +1003,7 @@
       const d = Math.hypot(nodes[i][0]-ux, nodes[i][1]-uy);
       if (d < nearDist) { nearDist = d; nearIdx = i; }
     }
-    if (nearIdx === entrance) return [[...nodes[entrance]], unitPos];
+    if (nearIdx === entrance) return [[...nodes[entrance]]];
 
     // Dijkstra from entrance
     const dist = new Float64Array(N).fill(Infinity);
@@ -1038,11 +1031,11 @@
       nearIdx = bestIdx;
     }
 
-    // Reconstruct path
+    // Reconstruct path — stop at the nearest corridor node, never enter the unit
     const path = [];
     let cur = nearIdx;
     while (cur !== -1) { path.unshift([...nodes[cur]]); cur = prev[cur]; }
-    path.push(unitPos);
+    // Do NOT append unitPos — the path stays on corridor lines only
     return snapAxes(path);
   }
 
@@ -1190,7 +1183,10 @@
     }
   }
 
-  function drawPath(canvas, img, pathPts, unitPos, progress) {
+  function drawPath(canvas, img, pathPts, _unitPos, progress) {
+    // Pin is drawn at the end of the path (last corridor node at the unit door),
+    // not at the unit centre — so it never crosses into the blue unit area.
+    const unitPos = pathPts[pathPts.length - 1];
     const W = img.naturalWidth, H = img.naturalHeight;
     canvas.width  = img.offsetWidth  * devicePixelRatio;
     canvas.height = img.offsetHeight * devicePixelRatio;
