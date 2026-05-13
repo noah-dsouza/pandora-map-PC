@@ -472,8 +472,8 @@
   // ─────────────────────────────────────────────────────────────────────────
   // UNIT COORDINATE DATABASE
   // All positions are [x, y] as fractions (0–1) of each floor image dimensions.
-  // Floor 1 image: floor1.png   (~1510 × 800 px)
-  // Floor 2 image: floor2.png   (~1510 × 820 px)
+  // Floor 1 image: floor1-simple.png   (~1510 × 800 px)
+  // Floor 2 image: floor2-discrete.png (~1510 × 820 px)
   //
   // To add or correct a unit: find its visual centre on the PNG and divide by
   // image width/height. E.g. pixel (755, 400) in a 1510×800 image → [0.50, 0.50]
@@ -795,12 +795,12 @@
   // ── FLOOR CONFIG ──
   const FLOORS = {
     '1': {
-      img: 'floor1.png',
+      img: 'floor1-simple.png',
       name: { en: 'Floor 1', fr: 'Étage 1' },
       waypoints: [[0.4087, 0.8936], [0.4086, 0.7809], [0.4235, 0.6994]],
     },
     '2': {
-      img: 'floor2.png',
+      img: 'floor2-discrete.png',
       name: { en: 'Floor 2', fr: 'Étage 2' },
       waypoints: [[0.4276, 0.942], [0.4249, 0.8124]],
     },
