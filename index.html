@@ -806,74 +806,14 @@
     },
   };
 
-  // ── CORRIDOR GRAPHS (manually calibrated) ──
-  const CORRIDOR_GRAPHS = {
-    '1': {
-      entrance: 0,
-      nodes: [
-        [0.4027,0.9099],[0.4027,0.781],[0.4238,0.7759],[0.4238,0.705],[0.6762,0.7037],
-        [0.6776,0.8094],[0.9054,0.8107],[0.9027,0.1237],[0.9007,0.0052],[0.4646,0.0039],
-        [0.1762,0.0026],[0.1762,0.1895],[0.0803,0.1882],[0.0796,0.705],[0.4088,0.7024],
-        [0.2041,0.8648],[0.2041,0.705],[0.2463,0.7875],[0.2463,0.7024],[0.0395,0.6998],
-        [0.0687,0.7011],[0.4524,0.0039],[0.4544,0.705],[0.9034,0.183],[0.1857,0.1869],
-        [0.1776,0.0258],[0.6776,0.1843],[0.6776,0.6818],[0.4537,0.4447],[0.6776,0.4434],
-        [0.0789,0.5207],[0.4531,0.5233],[0.6776,0.6509],[0.9041,0.6522],[0.6769,0.3415],
-        [0.9034,0.3403],
-      ],
-      edges: [
-        // user-traced
-        [0,1],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
-        [11,12],[12,13],[13,14],[15,16],[17,18],[19,20],[21,22],[23,24],[11,25],
-        [26,27],[28,29],[30,31],[32,33],[34,35],
-        // connectivity — wire all isolated segments to the entrance
-        [1,2],    // entrance vertical → y≈0.78 horizontal
-        [10,25],  // top-left corner → left vertical
-        [7,23],   // right vertical → y≈0.184 horizontal (right end)
-        [11,24],[24,26], // left vertical → y≈0.184 horizontal (left+mid)
-        [13,16],[16,18],[18,14],[14,3],[3,22], // y≈0.705 horizontal corridor
-        [20,13],  // far-left stub → main horizontal
-        [12,30],[30,13], // left vertical mid-section (x≈0.08)
-        [26,34],[34,29],[29,32],[32,27],[27,4], // x≈0.677 vertical corridor
-        [21,28],[28,31],[31,22], // x≈0.453 vertical corridor
-        [23,35],[35,33],[33,6], // right vertical mid-section (x≈0.9)
-        [9,21],   // top horizontal → x≈0.453 vertical
-        [0,15],   // entrance → bottom-left corridor
-        [2,17],   // y≈0.78 horizontal → left bottom section
-      ],
-    },
-    '2': {
-      entrance: 0,
-      nodes: [
-        [0.4279,0.947],[0.4265,0.8014],[0.1789,0.7962],[0.1782,0.7398],[0.1082,0.7358],
-        [0.1061,0.8919],[0.0653,0.888],[0.0653,0.2348],[0.1088,0.2348],[0.1088,0.7148],
-        [0.5463,0.7988],[0.5456,0.8565],[0.9184,0.8513],[0.9177,0.0315],[0.181,0.0275],
-        [0.1796,0.7201],[0.1803,0.2099],[0.919,0.2086],[0.1803,0.3712],[0.5435,0.3725],
-        [0.5442,0.3463],[0.9177,0.3436],[0.1796,0.5824],[0.9177,0.585],[0.5435,0.2099],
-        [0.5435,0.3253],[0.5435,0.3909],[0.5449,0.7135],[0.9177,0.7122],[0.2156,0.7975],
-        [0.9177,0.8945],[0.9442,0.8932],[0.5429,0.4564],[0.9177,0.4525],
-      ],
-      edges: [
-        // user-traced
-        [0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],
-        [1,10],[10,11],[11,12],[12,13],[13,14],[14,15],
-        [16,17],[18,19],[19,20],[20,21],[22,23],[24,25],[10,26],
-        [27,28],[12,30],[30,31],[32,33],
-        // connectivity — wire all isolated segments to the entrance
-        [14,16],[16,18],[18,22],[22,15],[15,3], // x≈0.18 vertical corridor
-        [13,17],[17,21],[21,33],[33,23],[23,28],[28,12], // x≈0.918 right vertical
-        [16,24],  // y≈0.21 horizontal: left connects to mid (node 24)
-        [25,20],[19,26],[26,32],[32,27],[27,10], // x≈0.544 vertical corridor
-        [2,29],[29,10], // y≈0.80 bottom horizontal (node 29 junction)
-        [9,15],   // x≈0.109 corridor bottom → x≈0.18 corridor
-        [9,4],    // x≈0.109 short gap between 9 and 4
-      ],
-    },
-  };
+  // Corridor graphs cleared — pixel-based A* routing used instead.
+  // Re-calibrate via calibrate2.html and paste the exported JSON here if needed.
+  const CORRIDOR_GRAPHS = { '1': { nodes: [], edges: [] }, '2': { nodes: [], edges: [] } };
 
   // ── PIXEL-BASED WALKABILITY GRID ──
   // Sample the floor image onto a small canvas and mark each cell walkable (white
   // corridor) or blocked (cyan/teal unit).  No manual corridor coordinates needed.
-  const GW = 320, GH = 170;     // grid cols × rows (~same aspect ratio as the PNG)
+  const GW = 640, GH = 340;     // grid cols × rows (~same aspect ratio as the PNG)
   const walkGrids = {};          // { floorId: Uint8Array }
 
   function buildWalkGrid(imgEl, floorId) {
