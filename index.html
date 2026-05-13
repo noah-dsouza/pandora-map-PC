@@ -927,11 +927,38 @@
     return null;
   }
 
+  // Snap graph node coords: cluster values within `eps` and replace with their median.
+  // This corrects slight hand-traced misalignments so paths draw as perfect H/V lines.
+  function normalizeGraphNodes(nodes, eps = 0.012) {
+    const snap = (vals) => {
+      const sorted = [...vals].sort((a, b) => a - b);
+      const groups = [];
+      let g = [sorted[0]];
+      for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i] - sorted[i-1] < eps) g.push(sorted[i]);
+        else { groups.push(g); g = [sorted[i]]; }
+      }
+      groups.push(g);
+      const map = new Map();
+      for (const grp of groups) {
+        const med = grp[Math.floor(grp.length / 2)];
+        for (const v of grp) map.set(v, med);
+      }
+      return map;
+    };
+    const xs = nodes.map(n => n[0]);
+    const ys = nodes.map(n => n[1]);
+    const xmap = snap(xs), ymap = snap(ys);
+    return nodes.map(([x, y]) => [xmap.get(x) ?? x, ymap.get(y) ?? y]);
+  }
+
   // ── GRAPH-BASED ROUTING (for calibrated floors) ──
   function graphRoute(floorId, unitPos) {
     const g = CORRIDOR_GRAPHS[floorId];
     if (!g || !g.nodes.length) return null;
-    const { nodes, edges, entrance } = g;
+    const rawNodes = g.nodes;
+    const { edges, entrance } = g;
+    const nodes = normalizeGraphNodes(rawNodes);
     const N = nodes.length;
 
     // Build weighted adjacency list
