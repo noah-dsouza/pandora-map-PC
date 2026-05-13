@@ -823,9 +823,26 @@
         [0.0904,0.5459], [0.4673,0.5481], [0.2192,0.5475], [0.2180,0.6710], [0.9103,0.6705], [0.6766,0.6705],
       ],
       edges: [
+        // traced by user
         [0,1], [1,2], [2,3], [3,4], [4,5], [4,6], [7,8], [8,9], [9,10], [10,11],
         [11,12], [12,13], [13,14], [14,15], [15,16], [16,17], [9,18], [18,19], [18,20], [20,21],
         [20,22], [22,23], [22,24], [25,26], [27,28], [20,29], [30,31], [32,33], [34,35],
+        // connectivity — only same-corridor (same x≈ or y≈) pairs
+        [6,7],    // main horiz y≈0.707: far-left gap
+        [3,23],   // main horiz y≈0.707: centre gap
+        [24,15],  // main horiz y≈0.706: right-centre gap
+        [16,29],  // upper horiz y≈0.197: 29[x=0.661] ↔ 16[x=0.679]
+        [11,17],  // right wall x≈0.910: top section
+        [17,28],  // right wall x≈0.910: upper-mid
+        [28,34],  // right wall x≈0.910: mid-lower
+        [13,34],  // right wall x≈0.910: lower section
+        [8,30],   // left vert x≈0.091: adds mid-node 30
+        [30,32],  // mid horiz y≈0.547: left section
+        [32,31],  // mid horiz y≈0.547: right section
+        [20,25],  // centre vert x≈0.465: upper section
+        [26,27],  // right inner vert x≈0.678: mid gap
+        [4,33],   // left-centre vert x≈0.218
+        [33,32],  // left-centre vert connects to mid horiz
       ],
     },
     '2': {
@@ -840,10 +857,32 @@
         [0.6749,0.3149], [0.6921,0.4418], [0.9143,0.4511], [0.6887,0.5666], [0.9120,0.5709], [0.9132,0.6935],
       ],
       edges: [
+        // traced by user
         [0,1], [1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [9,10],
         [10,11], [11,12], [12,13], [13,14], [13,15], [9,16], [17,18], [2,19], [20,21], [22,23],
         [24,25], [4,26], [26,27], [23,28], [28,29], [30,31], [32,33], [34,35], [35,36], [31,37],
         [37,38], [33,39], [39,40], [26,41],
+        // connectivity — only same-corridor (same x≈ or y≈) pairs
+        [1,16],   // main horiz y≈0.707: entrance vert meets centre
+        [16,17],  // main horiz y≈0.706: centre to left-centre
+        [9,17],   // main horiz y≈0.705: left-vert base to left-centre
+        [9,24],   // left inner vert x≈0.191: 9[y=0.705] → 24[y=0.533]
+        [24,22],  // left inner vert x≈0.190: 24[y=0.533] → 22[y=0.367]
+        [22,20],  // left inner vert x≈0.189: 22[y=0.367] → 20[y=0.203]
+        [7,21],   // right wall x≈0.912: top → upper-mid
+        [21,34],  // right wall x≈0.912: upper-mid → mid
+        [34,38],  // right wall x≈0.914: mid → lower-mid
+        [38,40],  // right wall x≈0.912: lower-mid → lower
+        [40,41],  // right wall x≈0.913: lower → base
+        [27,29],  // right corr x≈0.676: top → upper-mid
+        [29,31],  // right corr x≈0.676: upper-mid → mid
+        [31,33],  // right corr x≈0.676: mid → lower-mid
+        [33,26],  // right corr x≈0.676: lower-mid → base
+        [2,32],   // centre vert x≈0.499: main horiz → lower-mid
+        [32,25],  // centre vert x≈0.499: lower-mid → mid
+        [25,30],  // centre vert x≈0.499: mid → upper-mid
+        [30,23],  // centre vert x≈0.499: upper-mid → upper
+        [23,19],  // centre vert x≈0.500: upper → top
       ],
     },
   };
