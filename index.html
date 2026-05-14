@@ -1903,7 +1903,7 @@
     if (!g || !g.nodes.length) return null;
     const rawNodes = g.nodes;
     const { edges, entrance } = g;
-    const nodes = normalizeGraphNodes(rawNodes);
+    const nodes = rawNodes; // auto-generated nodes are already grid-aligned; normalizing chains-merges them
     const N = nodes.length;
 
     // Build weighted adjacency list
