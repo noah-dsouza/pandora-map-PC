@@ -208,6 +208,8 @@
       border-radius: 28px;
       padding: 22px 28px;
       flex-direction: column;
+      align-items: center;
+      text-align: center;
       gap: 3px;
       animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
     }
@@ -337,35 +339,20 @@
     }
     #fullscreenBtn:active { transform: scale(0.9); }
     #fullscreenBtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    /* Fullscreen styles */
-    :fullscreen .map-card,
-    :-webkit-full-screen .map-card {
-      border-radius: 0;
-      padding: 0;
-      border: none;
-      box-shadow: none;
-      background: #111;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+
+    /* Expanded map viewport — grows taller in-place */
+    .map-viewport {
+      transition: height 0.32s cubic-bezier(0.4,0,0.2,1);
     }
-    :fullscreen .map-header,
-    :-webkit-full-screen .map-header {
-      padding: 12px 16px 8px;
-      background: #111;
+    .map-viewport.map-expanded {
+      height: 72vh !important;
     }
-    :fullscreen .map-title,
-    :-webkit-full-screen .map-title { color: #fff; }
-    :fullscreen .map-viewport,
-    :-webkit-full-screen .map-viewport {
-      flex: 1;
-      border-radius: 0;
-      border: none;
-      background: #111;
+    .map-viewport.map-expanded #mapImg {
+      height: 72vh;
+      width: auto;
+      min-width: 100%;
+      object-fit: cover;
     }
-    :fullscreen .map-hint,
-    :-webkit-full-screen .map-hint { color: rgba(255,255,255,0.4); }
 
     /* ── Help Card ── */
     .help-card {
@@ -2998,29 +2985,29 @@ const $lang   = document.getElementById('langToggle');
     if (activeUnit && UNIT_FLOOR[activeUnit] === activeFloor) redrawPath();
   }).observe($img);
 
-  // ── FULLSCREEN ──
+  // ── EXPAND MAP (grows taller in-place, works on iOS Safari) ──
   const $fsBtn      = document.getElementById('fullscreenBtn');
   const $fsExpand   = document.getElementById('fsIconExpand');
   const $fsCollapse = document.getElementById('fsIconCollapse');
-  const $mapCard    = $fsBtn.closest('.map-card');
+  const $mapVP      = document.getElementById('mapViewport');
 
-  function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  function setExpanded(on) {
+    $mapVP.classList.toggle('map-expanded', on);
+    $fsExpand.style.display   = on ? 'none' : '';
+    $fsCollapse.style.display = on ? '' : 'none';
+    // Wait for CSS transition then reset panzoom + redraw
+    setTimeout(() => {
+      if (pz) {
+        pz.reset({ animate: false });
+        // On expand, zoom to 1.8x so the map fills the taller space usefully
+        if (on) pz.zoom(1.8, { animate: true });
+      }
+      if (activeUnit && UNIT_FLOOR[activeUnit] === activeFloor) redrawPath();
+    }, 340);
   }
-  function updateFsIcons() {
-    const fs = isFullscreen();
-    $fsExpand.style.display   = fs ? 'none' : '';
-    $fsCollapse.style.display = fs ? '' : 'none';
-  }
-  $fsBtn.addEventListener('click', () => {
-    if (!isFullscreen()) {
-      ($mapCard.requestFullscreen || $mapCard.webkitRequestFullscreen).call($mapCard);
-    } else {
-      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    }
-  });
-  document.addEventListener('fullscreenchange', updateFsIcons);
-  document.addEventListener('webkitfullscreenchange', updateFsIcons);
+
+  $fsBtn.addEventListener('click', () => setExpanded(!$mapVP.classList.contains('map-expanded')));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') setExpanded(false); });
 
   // ── PANZOOM ──
   function initPanzoom() {
