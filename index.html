@@ -17,14 +17,7 @@
       --muted: #6b7280;
       --ink: #111827;
     }
-    html.dark {
-      --white: #1a1a1a;
-      --black: #f0f0f0;
-      --surface: #252525;
-      --border: #333333;
-      --muted: #9ca3af;
-      --ink: #f0f0f0;
-    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       background: var(--white);
@@ -62,24 +55,7 @@
       letter-spacing: 0.12em;
       opacity: 0.65;
     }
-    .dark-toggle {
-      position: absolute;
-      left: 16px;
-      background: rgba(0,0,0,0.08);
-      border: none;
-      border-radius: 100px;
-      width: 36px;
-      height: 28px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-      transition: background 0.2s;
-      line-height: 1;
-    }
-    .dark-toggle:hover { background: rgba(0,0,0,0.16); }
-    .lang-toggle {
+.lang-toggle {
       position: absolute;
       right: 16px;
       background: rgba(0,0,0,0.08);
@@ -408,8 +384,7 @@
       <span data-lang="en">Pointe-Claire</span>
       <span data-lang="fr">Pointe-Claire</span>
     </div>
-    <button class="dark-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode">🌙</button>
-    <button class="lang-toggle" id="langToggle" type="button" aria-label="Toggle language">
+<button class="lang-toggle" id="langToggle" type="button" aria-label="Toggle language">
       <span class="lang-opt active" id="langFr">FR</span>
       <span class="lang-opt"        id="langEn">EN</span>
     </button>
@@ -473,17 +448,17 @@
     <div class="card help-card">
       <div class="help-label" data-lang="en">Need extra help?</div>
       <div class="help-label" data-lang="fr">Besoin d'aide ?</div>
-      <a href="tel:+14388122800" class="btn-phone">
+      <a href="tel:+14382563700" class="btn-phone">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
         </svg>
-        438-812-2800
+        (438) 256-3700
       </a>
       <div class="help-hours" data-lang="en">
-        Weekdays: 10 AM – 6 PM<br>Weekends: 10 AM – 5 PM
+        Access hours: 5 AM – 10 PM daily<br>Office: Mon–Fri 10 AM – 6 PM
       </div>
       <div class="help-hours" data-lang="fr">
-        En semaine : 10h – 18h<br>Week-end : 10h – 17h
+        Accès : 5h – 22h tous les jours<br>Bureau : lun–ven 10h – 18h
       </div>
     </div>
 
@@ -2161,86 +2136,97 @@
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.25)';
-    ctx.shadowBlur  = 6 * devicePixelRatio;
-
-    // Black outline
-    ctx.strokeStyle = '#111111';
-    ctx.lineWidth   = 5 * devicePixelRatio;
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) {
-      const l = segs[i-1];
-      if (remaining <= 0) break;
-      if (remaining >= l) {
-        ctx.lineTo(pts[i][0], pts[i][1]);
-        remaining -= l;
-      } else {
-        const t = remaining / l;
-        ctx.lineTo(pts[i-1][0] + t*(pts[i][0]-pts[i-1][0]),
-                   pts[i-1][1] + t*(pts[i][1]-pts[i-1][1]));
-        remaining = 0;
+    // Draw route: white outline + red fill
+    const drawLine = (color, width) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width * devicePixelRatio;
+      let rem = drawn;
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) {
+        const l = segs[i-1];
+        if (rem <= 0) break;
+        if (rem >= l) { ctx.lineTo(pts[i][0], pts[i][1]); rem -= l; }
+        else {
+          const t = rem / l;
+          ctx.lineTo(pts[i-1][0] + t*(pts[i][0]-pts[i-1][0]),
+                     pts[i-1][1] + t*(pts[i][1]-pts[i-1][1]));
+          rem = 0;
+        }
       }
-    }
-    ctx.stroke();
-
-    // Lime overlay
-    ctx.shadowBlur  = 0;
-    ctx.strokeStyle = '#ddfa00';
-    ctx.lineWidth   = 2.5 * devicePixelRatio;
-    remaining = drawn;
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) {
-      const l = segs[i-1];
-      if (remaining <= 0) break;
-      if (remaining >= l) {
-        ctx.lineTo(pts[i][0], pts[i][1]);
-        remaining -= l;
-      } else {
-        const t = remaining / l;
-        ctx.lineTo(pts[i-1][0] + t*(pts[i][0]-pts[i-1][0]),
-                   pts[i-1][1] + t*(pts[i][1]-pts[i-1][1]));
-        remaining = 0;
-      }
-    }
-    ctx.stroke();
-
-    // Origin dot
+      ctx.stroke();
+    };
     ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur  = 4 * devicePixelRatio;
-    ctx.fillStyle   = '#111111';
+    ctx.shadowBlur  = 6 * devicePixelRatio;
+    drawLine('rgba(255,255,255,0.9)', 6);
+    ctx.shadowBlur = 0;
+    drawLine('#e8192c', 3.5);
+
+    // "You Are Here" marker at start (pts[0])
+    const [sx, sy] = pts[0];
+    const rs = 9 * devicePixelRatio;
+    // Outer pulsing ring
+    ctx.shadowColor = 'rgba(232,25,44,0.5)';
+    ctx.shadowBlur  = 10 * devicePixelRatio;
+    ctx.strokeStyle = '#e8192c';
+    ctx.lineWidth   = 2 * devicePixelRatio;
     ctx.beginPath();
-    ctx.arc(pts[0][0], pts[0][1], 6 * devicePixelRatio, 0, Math.PI * 2);
+    ctx.arc(sx, sy, rs * 1.7, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // White filled circle
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#e8192c';
+    ctx.lineWidth = 2.5 * devicePixelRatio;
+    ctx.beginPath();
+    ctx.arc(sx, sy, rs, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Red dot in centre
+    ctx.fillStyle = '#e8192c';
+    ctx.beginPath();
+    ctx.arc(sx, sy, rs * 0.38, 0, Math.PI * 2);
     ctx.fill();
 
-    // Destination pin (draw when path is ≥90% complete)
+    // Destination badge (draw when path is ≥90% complete)
     if (progress >= 0.9) {
       const [ux, uy] = toCanvas(unitPos);
-      const r = 10 * devicePixelRatio;
-      ctx.shadowBlur = 6 * devicePixelRatio;
-      ctx.fillStyle = '#ddfa00';
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 2.5 * devicePixelRatio;
-      // Pin shape
+      const r = 11 * devicePixelRatio;
+      const pinH = r * 2.4;
+      // Drop shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur  = 8 * devicePixelRatio;
+      ctx.shadowOffsetY = 3 * devicePixelRatio;
+      // Pin body (teardrop)
+      ctx.fillStyle = '#e8192c';
       ctx.beginPath();
-      ctx.arc(ux, uy - r, r, 0, Math.PI * 2);
+      ctx.arc(ux, uy - pinH + r, r, Math.PI, 0);
+      ctx.bezierCurveTo(ux + r, uy - pinH + r * 1.5, ux + r * 0.4, uy - r * 0.4, ux, uy);
+      ctx.bezierCurveTo(ux - r * 0.4, uy - r * 0.4, ux - r, uy - pinH + r * 1.5, ux - r, uy - pinH + r);
+      ctx.closePath();
       ctx.fill();
-      ctx.stroke();
+      ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      // White outline stroke on pin
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2 * devicePixelRatio;
       ctx.beginPath();
-      ctx.moveTo(ux - r * 0.5, uy - r);
-      ctx.lineTo(ux, uy + r * 0.4);
-      ctx.lineTo(ux + r * 0.5, uy - r);
-      ctx.fillStyle = '#ddfa00';
-      ctx.fill();
-      ctx.strokeStyle = '#111111';
+      ctx.arc(ux, uy - pinH + r, r, Math.PI, 0);
+      ctx.bezierCurveTo(ux + r, uy - pinH + r * 1.5, ux + r * 0.4, uy - r * 0.4, ux, uy);
+      ctx.bezierCurveTo(ux - r * 0.4, uy - r * 0.4, ux - r, uy - pinH + r * 1.5, ux - r, uy - pinH + r);
+      ctx.closePath();
       ctx.stroke();
-      // Inner dot
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#111111';
+      // White star inside pin
+      ctx.fillStyle = '#ffffff';
+      const cx = ux, cy = uy - pinH + r;
+      const starR = r * 0.52, starInner = starR * 0.42, points = 5;
       ctx.beginPath();
-      ctx.arc(ux, uy - r, r * 0.38, 0, Math.PI * 2);
+      for (let i = 0; i < points * 2; i++) {
+        const angle = (i * Math.PI / points) - Math.PI / 2;
+        const rad = i % 2 === 0 ? starR : starInner;
+        i === 0 ? ctx.moveTo(cx + rad * Math.cos(angle), cy + rad * Math.sin(angle))
+                : ctx.lineTo(cx + rad * Math.cos(angle), cy + rad * Math.sin(angle));
+      }
+      ctx.closePath();
       ctx.fill();
     }
   }
@@ -2266,8 +2252,7 @@
   let pz = null;
 
   // ── DOM ──
-  const $dark   = document.getElementById('darkToggle');
-  const $lang   = document.getElementById('langToggle');
+const $lang   = document.getElementById('langToggle');
   const $fr     = document.getElementById('langFr');
   const $en     = document.getElementById('langEn');
   const $input  = document.getElementById('unitInput');
@@ -2282,18 +2267,7 @@
   const $img    = document.getElementById('mapImg');
   const $canvas = document.getElementById('mapCanvas');
 
-  // ── DARK MODE ──
-  function applyDark(on) {
-    document.documentElement.classList.toggle('dark', on);
-    $dark.textContent = on ? '☀️' : '🌙';
-    localStorage.setItem('pandora_dark', on ? '1' : '0');
-  }
-  const savedDark = localStorage.getItem('pandora_dark');
-  const prefersDark = savedDark !== null ? savedDark === '1' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyDark(prefersDark);
-  $dark.addEventListener('click', () => applyDark(!document.documentElement.classList.contains('dark')));
-
-  // ── LANGUAGE ──
+// ── LANGUAGE ──
   function setLang(l) {
     lang = l;
     document.body.className  = 'lang-' + l;
