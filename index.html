@@ -315,6 +315,57 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
+    #fullscreenBtn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 10;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(17,17,17,0.62);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.18s, transform 0.15s;
+      touch-action: manipulation;
+    }
+    #fullscreenBtn:active { transform: scale(0.9); }
+    #fullscreenBtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    /* Fullscreen styles */
+    :fullscreen .map-card,
+    :-webkit-full-screen .map-card {
+      border-radius: 0;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+      background: #111;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    :fullscreen .map-header,
+    :-webkit-full-screen .map-header {
+      padding: 12px 16px 8px;
+      background: #111;
+    }
+    :fullscreen .map-title,
+    :-webkit-full-screen .map-title { color: #fff; }
+    :fullscreen .map-viewport,
+    :-webkit-full-screen .map-viewport {
+      flex: 1;
+      border-radius: 0;
+      border: none;
+      background: #111;
+    }
+    :fullscreen .map-hint,
+    :-webkit-full-screen .map-hint { color: rgba(255,255,255,0.4); }
 
     /* ── Help Card ── */
     .help-card {
@@ -437,6 +488,12 @@
           <img id="mapImg" alt="" draggable="false">
           <canvas id="mapCanvas"></canvas>
         </div>
+        <button id="fullscreenBtn" type="button" aria-label="Toggle fullscreen">
+          <!-- expand icon (default) -->
+          <svg id="fsIconExpand" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <!-- collapse icon (hidden while not fullscreen) -->
+          <svg id="fsIconCollapse" viewBox="0 0 24 24" style="display:none"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>
+        </button>
       </div>
       <p class="map-hint">
         <span data-lang="en">Pinch or scroll to zoom · Drag to pan</span>
@@ -2384,6 +2441,30 @@ const $lang   = document.getElementById('langToggle');
   new ResizeObserver(() => {
     if (activeUnit && UNIT_FLOOR[activeUnit] === activeFloor) redrawPath();
   }).observe($img);
+
+  // ── FULLSCREEN ──
+  const $fsBtn      = document.getElementById('fullscreenBtn');
+  const $fsExpand   = document.getElementById('fsIconExpand');
+  const $fsCollapse = document.getElementById('fsIconCollapse');
+  const $mapCard    = $fsBtn.closest('.map-card');
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function updateFsIcons() {
+    const fs = isFullscreen();
+    $fsExpand.style.display   = fs ? 'none' : '';
+    $fsCollapse.style.display = fs ? '' : 'none';
+  }
+  $fsBtn.addEventListener('click', () => {
+    if (!isFullscreen()) {
+      ($mapCard.requestFullscreen || $mapCard.webkitRequestFullscreen).call($mapCard);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+  });
+  document.addEventListener('fullscreenchange', updateFsIcons);
+  document.addEventListener('webkitfullscreenchange', updateFsIcons);
 
   // ── PANZOOM ──
   function initPanzoom() {
