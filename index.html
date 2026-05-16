@@ -2398,12 +2398,27 @@ const $lang   = document.getElementById('langToggle');
     const id = val.trim();
     if (!id) { setFeedback(''); return; }
 
-    const floor = UNIT_FLOOR[id];
+    let floor = UNIT_FLOOR[id];
     if (!floor) {
-      setFeedback(lang === 'fr' ? `Unité « ${id} » introuvable.` : `Unit "${id}" not found.`);
-      $input.classList.add('error');
-      $result.classList.remove('show');
-      activeUnit = null; activePath = null;
+      // Guess floor from unit prefix (1xxx → floor 1, 2xxx → floor 2)
+      const guessed = id.startsWith('2') ? '2' : id.startsWith('1') ? '1' : null;
+      if (!guessed) {
+        setFeedback(lang === 'fr' ? `Unité « ${id} » introuvable.` : `Unit "${id}" not found.`);
+        $input.classList.add('error');
+        $result.classList.remove('show');
+        activeUnit = null; activePath = null;
+        return;
+      }
+      // Known floor, unknown position — show the floor, no route
+      setFeedback(lang === 'fr' ? `Position de l'unité ${id} non encore cartographiée.` : `Unit ${id} location not yet mapped.`);
+      $input.classList.remove('error');
+      activeUnit = id; activePath = null;
+      if (guessed !== activeFloor) selectFloor(guessed);
+      else clearCanvas();
+      $rLabel.textContent = lang === 'fr' ? `Unité ${id}` : `Unit ${id}`;
+      $rMain.textContent  = FLOORS[guessed].name[lang];
+      $rDir.textContent   = lang === 'fr' ? 'Emplacement non cartographié' : 'Location not mapped';
+      $result.classList.add('show');
       return;
     }
 
