@@ -796,12 +796,12 @@
   // ── FLOOR CONFIG ──
   const FLOORS = {
     '1': {
-      img: 'properfloor1.png',
+      img: 'realfloor1.png',
       name: { en: 'Floor 1', fr: 'Étage 1' },
       waypoints: [[0.4371, 0.8092]],
     },
     '2': {
-      img: 'properfloor2.png',
+      img: 'realfloor2.png',
       name: { en: 'Floor 2', fr: 'Étage 2' },
       waypoints: [[0.4206, 0.8923]],
     },
@@ -2208,14 +2208,6 @@
     // "You Are Here" marker at start (pts[0])
     const [sx, sy] = pts[0];
     const rs = 9 * devicePixelRatio;
-    // Outer pulsing ring
-    ctx.shadowColor = 'rgba(232,25,44,0.5)';
-    ctx.shadowBlur  = 10 * devicePixelRatio;
-    ctx.strokeStyle = '#e8192c';
-    ctx.lineWidth   = 2 * devicePixelRatio;
-    ctx.beginPath();
-    ctx.arc(sx, sy, rs * 1.7, 0, Math.PI * 2);
-    ctx.stroke();
     ctx.shadowBlur = 0;
     // White filled circle
     ctx.fillStyle = '#ffffff';
@@ -2258,18 +2250,11 @@
       ctx.bezierCurveTo(ux - r * 0.4, uy - r * 0.4, ux - r, uy - pinH + r * 1.5, ux - r, uy - pinH + r);
       ctx.closePath();
       ctx.stroke();
-      // White star inside pin
+      // White circle inside pin
       ctx.fillStyle = '#ffffff';
       const cx = ux, cy = uy - pinH + r;
-      const starR = r * 0.52, starInner = starR * 0.42, points = 5;
       ctx.beginPath();
-      for (let i = 0; i < points * 2; i++) {
-        const angle = (i * Math.PI / points) - Math.PI / 2;
-        const rad = i % 2 === 0 ? starR : starInner;
-        i === 0 ? ctx.moveTo(cx + rad * Math.cos(angle), cy + rad * Math.sin(angle))
-                : ctx.lineTo(cx + rad * Math.cos(angle), cy + rad * Math.sin(angle));
-      }
-      ctx.closePath();
+      ctx.arc(cx, cy, r * 0.38, 0, Math.PI * 2);
       ctx.fill();
     }
   }
