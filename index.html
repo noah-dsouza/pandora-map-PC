@@ -2069,15 +2069,15 @@
     const needsElevator = floorId === '2';
 
     if (lang === 'en') {
-      const prefix = needsElevator
-        ? `Take the elevator to ${floorLabel}. `
-        : '';
-      return `${prefix}Follow the highlighted path — unit ${unitId} is ${zone.en}.`;
+      if (needsElevator) {
+        return `Starting from the loading dock, take the elevator up to ${floorLabel}. From the elevator, follow the highlighted path — unit ${unitId} is ${zone.en}.`;
+      }
+      return `Starting from the loading dock, follow the highlighted path — unit ${unitId} is ${zone.en}.`;
     } else {
-      const prefix = needsElevator
-        ? `Prenez l'ascenseur jusqu'à l'${floorLabel}. `
-        : '';
-      return `${prefix}Suivez le chemin indiqué — l'unité ${unitId} se trouve ${zone.fr}.`;
+      if (needsElevator) {
+        return `Depuis le quai de chargement, prenez l'ascenseur jusqu'à l'${floorLabel}. Depuis l'ascenseur, suivez le chemin indiqué — l'unité ${unitId} se trouve ${zone.fr}.`;
+      }
+      return `Depuis le quai de chargement, suivez le chemin indiqué — l'unité ${unitId} se trouve ${zone.fr}.`;
     }
   }
 
