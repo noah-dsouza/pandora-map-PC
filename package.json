@@ -1,0 +1,16 @@
+{
+  "name": "pandora-map",
+  "version": "1.0.0",
+  "description": "Pandora Self-Storage Map Application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["pandora", "self-storage", "map"],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
