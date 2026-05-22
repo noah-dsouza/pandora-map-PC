@@ -798,13 +798,15 @@
   const FLOORS = {
     '1': {
       img: 'floor1.png',
+      trace: 'trace1.png',
       name: { en: 'Floor 1', fr: 'Étage 1' },
-      waypoints: [[0.4371, 0.8092]],
+      waypoints: [[0.43, 0.81]],
     },
     '2': {
       img: 'floor2.png',
+      trace: 'trace2.png',
       name: { en: 'Floor 2', fr: 'Étage 2' },
-      waypoints: [[0.4206, 0.8923]],
+      waypoints: [[0.35, 0.81]],
     },
   };
 
@@ -1523,30 +1525,25 @@ const CORRIDOR_GRAPHS = {
     const grid = new Uint8Array(GW * GH);
     for (let i = 0; i < GW * GH; i++) {
       const r = px[i*4], g = px[i*4+1], b = px[i*4+2];
-      // Only bright-white corridor pixels are walkable.
-      // Cyan units, orange loading dock, blue parking, black borders → all blocked.
-      // Corridors are near-white (~240,240,240); units are lime-green (~180,220,120) — exclude by requiring high blue
-      grid[i] = (r > 215 && g > 215 && b > 215) ? 1 : 0;
+      // Trace images mark walkable corridors with red lines (high R, low G/B).
+      grid[i] = (r > 180 && g < 120 && b < 120) ? 1 : 0;
     }
 
-    // Erode walkable area by ERODE_R cells to eliminate thin inter-unit white borders
-    // and keep the path centred in real corridors.
-    const ERODE_R = 1;
-    const eroded = new Uint8Array(GW * GH);
+    // Dilate red lines by 2px so A* can snap to them even if unit coords land just off the line.
+    const DILATE_R = 2;
+    const dilated = new Uint8Array(GW * GH);
     for (let r = 0; r < GH; r++) {
       for (let c = 0; c < GW; c++) {
         if (!grid[r*GW+c]) continue;
-        let ok = true;
-        outer: for (let dr = -ERODE_R; dr <= ERODE_R; dr++) {
-          for (let dc = -ERODE_R; dc <= ERODE_R; dc++) {
+        for (let dr = -DILATE_R; dr <= DILATE_R; dr++) {
+          for (let dc = -DILATE_R; dc <= DILATE_R; dc++) {
             const nr=r+dr, nc=c+dc;
-            if (nr>=0&&nr<GH&&nc>=0&&nc<GW&&!grid[nr*GW+nc]) { ok=false; break outer; }
+            if (nr>=0&&nr<GH&&nc>=0&&nc<GW) dilated[nr*GW+nc] = 1;
           }
         }
-        eroded[r*GW+c] = ok ? 1 : 0;
       }
     }
-    walkGrids[floorId] = eroded;
+    walkGrids[floorId] = dilated;
   }
 
   // ── A* ON WALKABILITY GRID ──
@@ -1761,10 +1758,6 @@ const CORRIDOR_GRAPHS = {
 
   // ── PATH BUILDER ──
   function buildPath(floorId, unitPos) {
-    // Use calibrated graph routing when available
-    const gp = graphRoute(floorId, unitPos);
-    if (gp) return gp;
-
     // Fall back to pixel-based A* for uncalibrated floors
     const floor = FLOORS[floorId];
     const [ux, uy] = unitPos;
@@ -2085,11 +2078,21 @@ const $lang   = document.getElementById('langToggle');
   function loadFloorImage(id, cb) {
     const src = FLOORS[id].img;
     if ($img.dataset.loaded === src) { cb && cb(); return; }
-    clearCanvas(); // clear stale path immediately before new image loads
+    clearCanvas();
     $img.onload = () => {
       $img.dataset.loaded = src;
-      buildWalkGrid($img, id);
-      cb && cb();
+      // Build walkability grid from the trace image (shows only walkable corridors)
+      const traceSrc = FLOORS[id].trace;
+      if (traceSrc) {
+        const traceEl = new Image();
+        traceEl.crossOrigin = 'anonymous';
+        traceEl.onload = () => { buildWalkGrid(traceEl, id); cb && cb(); };
+        traceEl.onerror = () => { buildWalkGrid($img, id); cb && cb(); };
+        traceEl.src = traceSrc;
+      } else {
+        buildWalkGrid($img, id);
+        cb && cb();
+      }
     };
     $img.onerror = () => { $img.dataset.loaded = ''; cb && cb(); };
     $img.src = src;
