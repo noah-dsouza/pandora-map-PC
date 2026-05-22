@@ -1509,8 +1509,9 @@ const CORRIDOR_GRAPHS = {
   // ── PIXEL-BASED WALKABILITY GRID ──
   // Sample the floor image onto a small canvas and mark each cell walkable (white
   // corridor) or blocked (cyan/teal unit).  No manual corridor coordinates needed.
-  const GW = 640, GH = 340;     // grid cols × rows (~same aspect ratio as the PNG)
-  const walkGrids = {};          // { floorId: Uint8Array }
+  // Higher resolution preserves thin red lines after downscale
+  const GW = 1024, GH = 546;
+  const walkGrids = {};
 
   function buildWalkGrid(imgEl, floorId) {
     if (walkGrids[floorId]) return;
@@ -1520,30 +1521,15 @@ const CORRIDOR_GRAPHS = {
     ctx.drawImage(imgEl, 0, 0, GW, GH);
     let px;
     try { px = ctx.getImageData(0, 0, GW, GH).data; }
-    catch (_) { return; }  // CORS — needs a real server (python -m http.server)
+    catch (_) { return; }
 
     const grid = new Uint8Array(GW * GH);
     for (let i = 0; i < GW * GH; i++) {
       const r = px[i*4], g = px[i*4+1], b = px[i*4+2];
-      // Trace images mark walkable corridors with red lines (high R, low G/B).
-      grid[i] = (r > 180 && g < 120 && b < 120) ? 1 : 0;
+      // Red corridor pixels only — high R, low G and B
+      grid[i] = (r > 180 && g < 130 && b < 130) ? 1 : 0;
     }
-
-    // Dilate red lines by 2px so A* can snap to them even if unit coords land just off the line.
-    const DILATE_R = 2;
-    const dilated = new Uint8Array(GW * GH);
-    for (let r = 0; r < GH; r++) {
-      for (let c = 0; c < GW; c++) {
-        if (!grid[r*GW+c]) continue;
-        for (let dr = -DILATE_R; dr <= DILATE_R; dr++) {
-          for (let dc = -DILATE_R; dc <= DILATE_R; dc++) {
-            const nr=r+dr, nc=c+dc;
-            if (nr>=0&&nr<GH&&nc>=0&&nc<GW) dilated[nr*GW+nc] = 1;
-          }
-        }
-      }
-    }
-    walkGrids[floorId] = dilated;
+    walkGrids[floorId] = grid;
   }
 
   // ── A* ON WALKABILITY GRID ──
@@ -2087,7 +2073,7 @@ const $lang   = document.getElementById('langToggle');
         const traceEl = new Image();
         traceEl.crossOrigin = 'anonymous';
         traceEl.onload = () => { buildWalkGrid(traceEl, id); cb && cb(); };
-        traceEl.onerror = () => { buildWalkGrid($img, id); cb && cb(); };
+        traceEl.onerror = () => { cb && cb(); };
         traceEl.src = traceSrc;
       } else {
         buildWalkGrid($img, id);
