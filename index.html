@@ -202,6 +202,27 @@
     #findBtn:active { transform: scale(0.96); }
     .input-feedback { font-size: 13px; color: #ef4444; font-weight: 500; min-height: 18px; }
 
+    .office-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(200,240,0,0.1);
+      border: 1.5px solid rgba(200,240,0,0.3);
+      border-radius: 100px;
+      padding: 9px 20px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--lime);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .office-btn:hover { background: rgba(200,240,0,0.18); border-color: var(--lime); }
+    .office-btn:active { transform: scale(0.96); }
+    .office-btn svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+
     /* ── Result Card ── */
     .result-card {
       display: none;
@@ -420,6 +441,11 @@
         </div>
         <div class="input-feedback" id="inputFeedback" aria-live="polite"></div>
       </div>
+      <button class="office-btn" id="officeBtn" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <span data-lang="en">Find the Office</span>
+        <span data-lang="fr">Trouver le Bureau</span>
+      </button>
     </div>
 
     <!-- Result -->
@@ -790,12 +816,18 @@
     '2945': [0.8562, 0.0861], '2946': [0.8604, 0.0861],
   };
 
+  // ── Special destinations ──
+  const SPECIALS = {
+    'BUREAU': [0.10, 0.08],
+  };
+
   // ── Which floor does each unit belong to? ──
   const UNIT_FLOOR = {};
   Object.keys(F1).forEach(id => { UNIT_FLOOR[id] = '1'; });
   Object.keys(F2).forEach(id => { UNIT_FLOOR[id] = '2'; });
+  UNIT_FLOOR['BUREAU'] = '1';
 
-  const UNIT_POS = { ...F1, ...F2 };
+  const UNIT_POS = { ...F1, ...F2, ...SPECIALS };
 
   // ── FLOOR CONFIG ──
   const FLOORS = {
@@ -1214,7 +1246,7 @@
     }
   }
 
-  function drawPath(canvas, img, pathPts, _unitPos, progress) {
+  function drawPath(canvas, img, pathPts, _unitPos, progress, pulseT = -1) {
     // Pin is drawn at the end of the path (last corridor node at the unit door),
     // not at the unit centre — so it never crosses into the blue unit area.
     const unitPos = pathPts[pathPts.length - 1];
@@ -1326,18 +1358,43 @@
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.38, 0, Math.PI * 2);
       ctx.fill();
+
+      // Pulse rings around pin circle
+      if (pulseT >= 0) {
+        for (let i = 0; i < 3; i++) {
+          const pt = ((pulseT + i / 3) % 1);
+          const pr = (r + pt * r * 2.2) * devicePixelRatio;
+          const alpha = (1 - pt) * 0.55;
+          ctx.beginPath();
+          ctx.arc(cx, cy, pr, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(232,25,44,${alpha})`;
+          ctx.lineWidth = 2 * devicePixelRatio;
+          ctx.stroke();
+        }
+      }
     }
   }
 
   function animatePath(canvas, img, pathPts, unitPos) {
     if (animFrame) cancelAnimationFrame(animFrame);
+    if (pulseFrame) { cancelAnimationFrame(pulseFrame); pulseFrame = null; }
     const duration = 900;
     const start = performance.now();
     function step(now) {
       const t = Math.min((now - start) / duration, 1);
       const ease = 1 - Math.pow(1 - t, 3);
       drawPath(canvas, img, pathPts, unitPos, ease);
-      if (t < 1) animFrame = requestAnimationFrame(step);
+      if (t < 1) {
+        animFrame = requestAnimationFrame(step);
+      } else {
+        const pulseStart = performance.now();
+        function pulseTick(now) {
+          const pt = ((now - pulseStart) % 1600) / 1600;
+          drawPath(canvas, img, pathPts, unitPos, 1, pt);
+          pulseFrame = requestAnimationFrame(pulseTick);
+        }
+        pulseFrame = requestAnimationFrame(pulseTick);
+      }
     }
     animFrame = requestAnimationFrame(step);
   }
@@ -1348,6 +1405,7 @@
   let activeUnit = null;
   let activePath = null;
   let pz = null;
+  let pulseFrame = null;
 
   // ── DOM ──
 const $lang   = document.getElementById('langToggle');
@@ -1436,6 +1494,7 @@ const $lang   = document.getElementById('langToggle');
     const ctx = $canvas.getContext('2d');
     ctx.clearRect(0, 0, $canvas.width, $canvas.height);
     if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    if (pulseFrame) { cancelAnimationFrame(pulseFrame); pulseFrame = null; }
   }
 
   function redrawPath() {
@@ -1461,6 +1520,7 @@ const $lang   = document.getElementById('langToggle');
     setFeedback('');
     $input.classList.remove('error');
     activeUnit = id;
+    if (id !== 'BUREAU') localStorage.setItem('pandora_last_unit', id);
     activePath = buildPath(floor, UNIT_POS[id]);
 
     if (floor !== activeFloor) {
@@ -1473,9 +1533,17 @@ const $lang   = document.getElementById('langToggle');
   }
 
   function showResult(id, floor) {
-    $rLabel.textContent = lang === 'fr' ? `Unité ${id}` : `Unit ${id}`;
-    $rMain.textContent  = FLOORS[floor].name[lang];
-    $rDir.textContent   = getDirection(floor, id, UNIT_POS[id], lang);
+    if (id === 'BUREAU') {
+      $rLabel.textContent = lang === 'fr' ? 'Destination' : 'Destination';
+      $rMain.textContent  = lang === 'fr' ? 'Bureau' : 'Office';
+      $rDir.textContent   = lang === 'fr'
+        ? 'Suivez le chemin indiqué — le bureau se trouve à l\'entrée du bâtiment.'
+        : 'Follow the highlighted path — the office is at the building entrance.';
+    } else {
+      $rLabel.textContent = lang === 'fr' ? `Unité ${id}` : `Unit ${id}`;
+      $rMain.textContent  = FLOORS[floor].name[lang];
+      $rDir.textContent   = getDirection(floor, id, UNIT_POS[id], lang);
+    }
     $result.classList.add('show');
   }
 
@@ -1487,6 +1555,10 @@ const $lang   = document.getElementById('langToggle');
   $btn.addEventListener('click', () => findUnit($input.value));
   $input.addEventListener('keydown', e => { if (e.key === 'Enter') findUnit($input.value); });
   $input.addEventListener('input', () => { if ($input.classList.contains('error')) setFeedback(''); });
+  document.getElementById('officeBtn').addEventListener('click', () => {
+    $input.value = '';
+    findUnit('BUREAU');
+  });
 
   // Resize observer: redraw path when image resizes — only if on the correct floor
   new ResizeObserver(() => {
@@ -1509,7 +1581,15 @@ const $lang   = document.getElementById('langToggle');
   buildFloorButtons();
   loadFloorImage('1', initPanzoom);
   setLang('fr');
-  setTimeout(() => $input.focus(), 400);
+
+  // Restore last searched unit
+  const _saved = localStorage.getItem('pandora_last_unit');
+  if (_saved && UNIT_POS[_saved]) {
+    $input.value = _saved;
+    setTimeout(() => findUnit(_saved), 300);
+  } else {
+    setTimeout(() => $input.focus(), 400);
+  }
   </script>
 </body>
 </html>
