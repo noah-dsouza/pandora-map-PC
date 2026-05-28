@@ -811,7 +811,7 @@
 
   // ── Special destinations ──
   const SPECIALS = {
-    'BUREAU': [0.10, 0.08],
+    'BUREAU': [0.1452, 0.1744],
   };
 
   // ── Which floor does each unit belong to? ──
@@ -2429,7 +2429,8 @@ const $lang   = document.getElementById('langToggle');
 
   // ── SEARCH ──
   function findUnit(val) {
-    const id = val.trim();
+    const raw = val.trim();
+    const id = raw.toUpperCase() === 'BUREAU' ? 'BUREAU' : raw;
     if (!id) { setFeedback(''); return; }
 
     const floor = UNIT_FLOOR[id];
