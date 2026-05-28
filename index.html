@@ -2285,14 +2285,14 @@ const CORRIDOR_GRAPHS = {
 
       // Pulse rings around pin circle
       if (pulseT >= 0) {
-        for (let i = 0; i < 3; i++) {
-          const pt = ((pulseT + i / 3) % 1);
-          const pr = (r + pt * r * 2.2) * devicePixelRatio;
-          const alpha = (1 - pt) * 0.55;
+        for (let i = 0; i < 2; i++) {
+          const pt = ((pulseT + i / 2) % 1);
+          const pr = (r + pt * r * 1.1) * devicePixelRatio;
+          const alpha = (1 - pt) * 0.45;
           ctx.beginPath();
           ctx.arc(cx, cy, pr, 0, Math.PI * 2);
           ctx.strokeStyle = `rgba(232,25,44,${alpha})`;
-          ctx.lineWidth = 2 * devicePixelRatio;
+          ctx.lineWidth = 1.5 * devicePixelRatio;
           ctx.stroke();
         }
       }
