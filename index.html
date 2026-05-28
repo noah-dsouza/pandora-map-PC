@@ -1949,7 +1949,7 @@ const CORRIDOR_GRAPHS = {
     // Direction-aware Dijkstra with 2 states per node: arrived horizontally (0) or vertically (1).
     // Tracking arrival direction separately prevents the bug where a cheaper-but-turned arrival
     // overwrites a straighter arrival, corrupting path reconstruction.
-    const TURN_PENALTY = 0.12;
+    const TURN_PENALTY = 5.0; // >> max path distance (~3), so fewer turns always wins
     const INF = Infinity;
     // distHV[dir][node] = min cost to reach node arriving in direction dir (0=H, 1=V)
     const distHV = [new Float64Array(N).fill(INF), new Float64Array(N).fill(INF)];
