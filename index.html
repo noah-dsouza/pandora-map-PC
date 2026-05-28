@@ -159,7 +159,7 @@
       color: var(--muted);
       opacity: 0.8;
     }
-    .input-row { display: flex; width: 100%; gap: 8px; }
+    .input-row { display: flex; width: 100%; gap: 8px; align-items: stretch; }
     #unitInput {
       flex: 1;
       min-width: 0;
@@ -195,16 +195,20 @@
       text-transform: uppercase;
       cursor: pointer;
       transition: all 0.2s;
-      height: 56px;
       flex-shrink: 0;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #findBtn:hover { background: var(--white); color: var(--black); }
     #findBtn:active { transform: scale(0.96); }
     .input-feedback { font-size: 13px; color: #ef4444; font-weight: 500; min-height: 18px; }
 
     .office-btn {
-      display: inline-flex;
+      display: flex;
       align-items: center;
+      justify-content: center;
       gap: 7px;
       background: rgba(200,240,0,0.1);
       border: 1.5px solid rgba(200,240,0,0.3);
